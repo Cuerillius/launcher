@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-mood: #0d0d0d;
+  --accent-color: #ffcf10;
+  --color-accent: #ffcf10;
+  --color-selection: #313131;
+}
+
+.scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-selection);
+  border-radius: 10px;
+  border: 3px solid var(--color-mood);
+}
+
+.scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-selection);
+}
