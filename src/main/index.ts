@@ -1,7 +1,9 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import path, { join } from 'path'
 import fs from 'fs'
+import { ChildProcess, spawn } from 'child_process'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import treeKill from 'tree-kill'
 import icon from '../../resources/icon.png?asset'
 import { Executable } from '../shared/types'
 
@@ -51,17 +53,89 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  ipcMain.handle('launch-executable', async (_event, path: string) => {
+  let gameProcess: ChildProcess | null = null
+
+  ipcMain.on('launch-executable', (event, executablePath: string) => {
+    if (gameProcess) {
+      console.log('An executable is already running.')
+      event.sender.send('executable-already-running')
+      return
+    }
+
     try {
-      const error = await shell.openPath(path)
-      if (error) {
-        console.error(`Failed to launch executable: ${error}`)
-        return { success: false, error }
+      const gameExecutable = path.basename(executablePath)
+      const gameDirectory = path.dirname(executablePath)
+
+      gameProcess = spawn(gameExecutable, [], {
+        cwd: gameDirectory,
+        detached: true,
+        stdio: 'ignore'
+      })
+
+      console.log(`Executable process started with PID: ${gameProcess.pid}`)
+
+      // *** FIX 1: Send confirmation back to the renderer ***
+      // This tells the React component to update its UI to the "running" state.
+      event.sender.send('executable-started', gameProcess.pid)
+      // *** FIX 2: Add a robust 'error' handler for the spawn process itself ***
+      gameProcess.on('error', (err) => {
+        console.error('Failed to start executable process:', err)
+        event.sender.send('executable-start-error', err.message)
+        gameProcess = null // Reset the process state
+      })
+
+      // Use 'exit' which is more comprehensive than 'close'.
+      // This handles the case where the user closes the executable  manually.
+      gameProcess.on('exit', (code) => {
+        console.log(`Executable process exited with code: ${code}`)
+        // *** FIX 3: Inform the renderer that the executable has stopped ***
+        // This allows the UI to reset even if the executable is closed outside the launcher.
+        event.sender.send('executable-stopped')
+        gameProcess = null
+      })
+    } catch (error: any) {
+      // *** FIX 4: Send launch errors back to the renderer ***
+      console.error('Error trying to spawn executable:', error)
+      event.sender.send('executable-start-error', error.message)
+      gameProcess = null
+    }
+  })
+
+  ipcMain.on('stop-executable', (event) => {
+    if (!gameProcess || !gameProcess.pid) {
+      console.log('No executable process to stop.')
+      // Optional: Let the renderer know there was nothing to stop.
+      event.sender.send('no-executable-running')
+      return
+    }
+
+    console.log(`Attempting to kill executable process tree with PID: ${gameProcess.pid}`)
+
+    treeKill(gameProcess.pid, 'SIGKILL', (err) => {
+      if (err) {
+        console.error('Error killing game process tree:', err)
+        event.sender.send('game-stop-error', err.message)
+      } else {
+        console.log('Executable process tree killed successfully.')
+        // The 'exit' event on the gameProcess will fire automatically after the kill,
+        // which will then send the 'executable-stopped' message.
+        // So you don't strictly need to send it from here, but setting the process to null is safe.
+        gameProcess = null
       }
-      return { success: true }
-    } catch (e: any) {
-      console.error(`Error launching executable: ${e.message}`)
-      return { success: false, error: e.message }
+    })
+  })
+
+  app.on('before-quit', (event) => {
+    if (gameProcess && gameProcess.pid) {
+      console.log('Electron app is quitting, attempting to kill running executable.')
+      event.preventDefault()
+      treeKill(gameProcess.pid, 'SIGKILL', (err) => {
+        if (err) {
+          console.error('Error killing executable process during app quit:', err)
+        }
+        gameProcess = null
+        app.quit()
+      })
     }
   })
 
@@ -97,6 +171,14 @@ app.whenReady().then(() => {
         const newLogoPath = path.join(resourcesDir, newLogoFileName)
         await fs.promises.copyFile(executable.logoPath, newLogoPath)
         newExecutableData.logoPath = path.relative(executableDir, newLogoPath)
+      }
+
+      if (executable.gridPath && fs.existsSync(executable.gridPath)) {
+        const gridExtension = path.extname(executable.gridPath)
+        const newGridFileName = `grid${gridExtension}`
+        const newGridPath = path.join(resourcesDir, newGridFileName)
+        await fs.promises.copyFile(executable.gridPath, newGridPath)
+        newExecutableData.gridPath = path.relative(executableDir, newGridPath)
       }
 
       const metadata = JSON.stringify(newExecutableData, null, 2)
@@ -143,6 +225,9 @@ app.whenReady().then(() => {
               if (executableData.logoPath) {
                 executableData.logoPath = path.join(executableDir, executableData.logoPath)
               }
+              if (executableData.gridPath) {
+                executableData.gridPath = path.join(executableDir, executableData.gridPath)
+              }
               executables.push(executableData)
             } catch (readError) {
               console.error(
@@ -180,20 +265,12 @@ app.whenReady().then(() => {
   createWindow()
 
   app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.

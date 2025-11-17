@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import AddExecutable from './AddExecutable'
 import { Executable } from '../../../shared/types'
+import { LayoutGrid, PanelLeftClose, Plus } from 'lucide-react'
+import { ExecutableIcon } from './Images'
 
 type SideBarProps = {
   list: Executable[]
-  onSelect: (executable: Executable) => void
+  onSelect: (executable: Executable | null) => void
 }
 
 function SideBar({ list, onSelect }: SideBarProps): React.JSX.Element {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   const [filterText, setFilterText] = useState('')
 
@@ -17,33 +20,73 @@ function SideBar({ list, onSelect }: SideBarProps): React.JSX.Element {
     .sort((a, b) => a.name.localeCompare(b.name))
 
   return (
-    <aside className="w-full bg-mood text-white h-full flex flex-col p-4">
-      <h4 className="text-xs font-bold tracking-wider text-gray-500 mb-4 uppercase">MY LIBRARY</h4>
-
-      <input
-        className="w-full px-3 py-2 bg-selection border-none rounded text-sm placeholder-gray-400 mb-4 focus:outline-none"
-        placeholder="Filter library"
-        aria-label="Filter library"
-        onChange={(e) => setFilterText(e.target.value)}
-      />
-      <div className="flex-grow overflow-y-scroll scrollbar">
+    <aside
+      className={`border-r border-neutral-700 bg-mood text-white h-full flex flex-col transition-all duration-300 ${
+        isCollapsed ? 'w-20 p-2' : 'w-64 p-4 lg:w-96'
+      }`}
+    >
+      <div
+        className={`flex items-center mb-4 ${isCollapsed ? 'justify-center' : 'justify-between'}`}
+      >
+        {!isCollapsed && (
+          <h4
+            className={`text-xs font-bold tracking-wider text-gray-500 uppercase transition-opacity duration-300 ${
+              isCollapsed ? 'opacity-0 w-0' : 'opacity-100'
+            }`}
+          >
+            My Library
+          </h4>
+        )}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="text-gray-400 hover:text-white"
+        >
+          <PanelLeftClose
+            className={`transition-transform duration-300 w-5 ${isCollapsed ? 'rotate-180' : ''}`}
+          />
+        </button>
+      </div>
+      <div className={`flex items-center gap-2 mb-4 ${isCollapsed ? 'justify-center' : ''}`}>
+        {!isCollapsed && (
+          <input
+            className="flex-grow px-3 py-2 bg-selection border-none rounded text-sm placeholder-gray-400 focus:outline-none"
+            placeholder="Filter library"
+            aria-label="Filter library"
+            onChange={(e) => setFilterText(e.target.value)}
+          />
+        )}
+        <button
+          onClick={() => onSelect(null)}
+          className={`text-gray-400 hover:text-white flex-shrink-0 ${
+            isCollapsed
+              ? 'w-full h-12 flex items-center justify-center hover:bg-selection rounded'
+              : 'p-1 rounded hover:bg-selection'
+          }`}
+        >
+          <LayoutGrid className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="flex-grow overflow-y-auto scrollbar">
         <div className="relative">
           <ul className="space-y-1">
             {filteredList.map((executable) => (
               <li
-                className="flex items-center gap-3 px-2 py-1.5 rounded hover:bg-selection cursor-pointer"
+                className={`flex items-center gap-3 p-2 rounded hover:bg-selection cursor-pointer ${
+                  isCollapsed ? 'justify-center' : ''
+                }`}
                 key={executable.id}
                 onClick={() => onSelect(executable)}
+                title={executable.name}
               >
-                <img
-                  className="w-6 h-6 object-contain rounded"
-                  src={executable.iconPath}
-                  alt={`${executable.name} icon`}
-                />
-                {executable.executablePath ? (
-                  <span className="text-sm font-medium">{executable.name}</span>
-                ) : (
-                  <span className="text-sm font-medium text-gray-500">{executable.name}</span>
+                <div
+                  className={`flex items-center justify-center ${
+                    isCollapsed ? 'w-12 h-12' : 'w-10 h-10'
+                  }`}
+                >
+                  <ExecutableIcon {...executable} />
+                </div>
+                {!isCollapsed && (
+                  <span className="text-sm font-medium truncate">{executable.name}</span>
                 )}
               </li>
             ))}
@@ -55,27 +98,16 @@ function SideBar({ list, onSelect }: SideBarProps): React.JSX.Element {
         </div>
       </div>
 
-      <div className="p-2 mt-auto border-t border-gray-700">
+      <div className={`mt-auto border-t border-gray-700 pt-2`}>
         <button
           onClick={() => setIsAddDialogOpen(true)}
-          className="w-full flex items-center gap-2 px-3 py-2 text-white rounded text-sm hover:bg-selection"
+          className={`w-full flex items-center gap-2 text-white rounded text-sm hover:bg-selection ${
+            isCollapsed ? 'justify-center h-12' : 'px-3 py-2'
+          }`}
           aria-label="Add executable"
         >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-            />
-          </svg>
-          <span>Add Executable</span>
+          <Plus className="w-5 h-5 flex-shrink-0" />
+          {!isCollapsed && <span>Add Executable</span>}
         </button>
       </div>
       {isAddDialogOpen && <AddExecutable onClose={() => setIsAddDialogOpen(false)} />}

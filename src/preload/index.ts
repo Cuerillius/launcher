@@ -1,7 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { Executable } from '../shared/types'
-import { exec } from 'child_process'
 
 // Custom APIs for renderer
 const api = {}
@@ -13,7 +12,20 @@ const fsAPI = {
 }
 
 const executableAPI = {
-  launch: (path: string) => ipcRenderer.invoke('launch-executable', path)
+  launch: (path) => ipcRenderer.send('launch-executable', path),
+
+  stop: () => ipcRenderer.send('stop-executable'),
+
+  onExecutableStarted: (callback) =>
+    ipcRenderer.on('executable-started', (_event, ...args) => callback(...args)),
+
+  onExecutableStopped: (callback) =>
+    ipcRenderer.on('executable-stopped', (_event, ...args) => callback(...args)),
+
+  removeListeners: () => {
+    ipcRenderer.removeAllListeners('executable-started')
+    ipcRenderer.removeAllListeners('executable-stopped')
+  }
 }
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise

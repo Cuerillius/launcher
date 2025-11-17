@@ -6,4 +6,5 @@ export type Executable = {
   bannerPath?: string
   description?: string
   executablePath?: string
+  gridPath?: string
 }

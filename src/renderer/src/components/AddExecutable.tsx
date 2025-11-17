@@ -12,7 +12,8 @@ function AddExecutable({ onClose }: AddExecutableProps): React.JSX.Element {
     description: '',
     iconPath: '',
     bannerPath: '',
-    logoPath: ''
+    logoPath: '',
+    gridPath: ''
   })
 
   const handleInputChange = (
@@ -26,7 +27,7 @@ function AddExecutable({ onClose }: AddExecutableProps): React.JSX.Element {
   }
 
   const handleFileSelect = async (
-    field: 'executablePath' | 'iconPath' | 'bannerPath' | 'logoPath'
+    field: 'executablePath' | 'iconPath' | 'bannerPath' | 'logoPath' | 'gridPath'
   ): Promise<void> => {
     const filePath = await window.fs.openFileDialog()
 
@@ -136,7 +137,8 @@ function AddExecutable({ onClose }: AddExecutableProps): React.JSX.Element {
               [
                 { key: 'iconPath', label: 'Icon' },
                 { key: 'bannerPath', label: 'Banner' },
-                { key: 'logoPath', label: 'Logo' }
+                { key: 'logoPath', label: 'Logo' },
+                { key: 'gridPath', label: 'Grid' }
               ] as const
             ).map(({ key, label }) => (
               <div key={key}>
