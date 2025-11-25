@@ -1,31 +1,30 @@
-import { useEffect, useState } from 'react'
-import { Executable } from 'src/shared/types'
-import ExecutableView from './components/ExecutableView'
-import SideBar from './components/Sidebar'
-import ExploreView from './components/ExploreView'
+import { HashRouter, Routes, Route } from 'react-router-dom'
+import GridPage from './pages/GridPage'
+import AddPage from './pages/AddPage'
+import DetailPage from './pages/DetailPage'
+import EditPage from './pages/EditPage'
+import MainLayout from './Layout'
 
 function App(): React.JSX.Element {
-  const [list, setList] = useState<Executable[]>([])
-  const [selectedExecutable, setSelectedExecutable] = useState<Executable | null>(null)
-
-  useEffect(() => {
-    const fetchExecutables = async (): Promise<void> => {
-      const executables = await window.fs.getAll()
-      setList(executables)
-    }
-    fetchExecutables()
-  }, [])
-
   return (
-    <div className="flex h-screen bg-mood">
-      <SideBar list={list} onSelect={setSelectedExecutable} />
-      <main className="flex-1 w-full">
-        {selectedExecutable !== null && <ExecutableView executable={selectedExecutable} />}
-        {selectedExecutable === null && (
-          <ExploreView executables={list} onExecutableClick={setSelectedExecutable} />
-        )}
-      </main>
-    </div>
+    <HashRouter>
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<GridPage />} />
+          <Route path="/add" element={<AddPage />} />
+          <Route path="/executable/:id" element={<DetailPage />} />
+          <Route path="/edit/:id" element={<EditPage />} />
+          <Route
+            path="*"
+            element={
+              <div className="bg-mood text-white p-10 flex items-center justify-center h-full">
+                404: Route Not Found
+              </div>
+            }
+          />
+        </Route>
+      </Routes>
+    </HashRouter>
   )
 }
 

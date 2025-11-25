@@ -45,12 +45,14 @@ export function ExecutableLogo(executable: Executable) {
       <img
         src={executable.logoPath}
         alt={`${executable.name} title`}
-        className="max-h-24 object-contain lg:max-h-32 xl:max-h-40"
+        className="object-contain object-left w-auto h-auto
+             max-h-40 max-w-[20rem] 
+             lg:max-h-56 lg:max-w-[28rem] 
+             xl:max-h-64 xl:max-w-[36rem]"
       />
     )
   } else {
     return <h1 className="text-5xl font-bold tracking-tight">{executable.name}</h1>
   }
 }
-
-// GridImage is not here because it is isnt used as a component but as parameter
+// GridImage is not here because it is isnt used as a component but as parameter for some complex 3D rendering shenadigans

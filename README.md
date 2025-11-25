@@ -1,34 +1,61 @@
-# launcher
+# Launcher
 
-An Electron application with React and TypeScript
+A simple, opinionated game launcher designed to organize your library without the bloat.
 
-## Recommended IDE Setup
+> "There are too many launchers, so I built one to rule them all."
 
-- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+![Screenshot Placeholder](./resources/screenshot.png)
 
-## Project Setup
+## Features
 
-### Install
+- Minimal UI
+- Grid Gallery View
+- SteamGridDB Integration
+- Playtime Tracking
 
-```bash
-$ npm install
-```
+## Getting Started
 
-### Development
+### Installation
 
-```bash
-$ npm run dev
-```
+You can grab the latest version for your operating system from the [Releases Page](https://github.com/Cuerillius/launcher/releases).
 
-### Build
+**Options:**
 
-```bash
-# For windows
-$ npm run build:win
+1.  **Installer:** Download the `.exe` and follow the setup instructions.
+2.  **Portable:** Download the portable binary, unzip, and run directly.
 
-# For macOS
-$ npm run build:mac
+## Developer Guide
 
-# For Linux
-$ npm run build:linux
-```
+If you want to contribute or modify the launcher, follow these steps to run it locally.
+
+### Prerequisites
+
+- [Bun](https://bun.sh/) (Runtime & Package Manager)
+
+### Running Locally
+
+1.  **Clone the repository**
+
+    ```sh
+    git clone https://github.com/Cuerillius/launcher.git
+    cd launcher
+    ```
+
+2.  **Install dependencies**
+
+    ```sh
+    bun install
+    ```
+
+3.  **Start the application**
+
+    ```sh
+    # Run the app in development mode
+    bun run start
+    ```
+
+4.  **Watch mode (for live development)**
+    ```sh
+    # specific command for hot-reloading/watching files
+    bun run watch
+    ```

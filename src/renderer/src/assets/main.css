@@ -2,11 +2,12 @@
 
 @theme {
   --color-mood: #0d0d0d;
-  --accent-color: #ffcf10;
-  --color-accent: #ffcf10;
-  --color-secondary: #c75000;
-  --color-complement: #427aa1;
-  --color-selection: #313131;
+  --accent-color: #e9b824;
+  --color-accent: #e9b824;
+  --color-accent-2: #ffde14;
+  --color-danger: #990404;
+  --color-danger-2: #c92424;
+  --color-selection: #212121;
 }
 
 .scrollbar::-webkit-scrollbar {

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import AddExecutable from './AddExecutable'
 import { Executable } from '../../../shared/types'
 import { LayoutGrid, PanelLeftClose, Plus } from 'lucide-react'
 import { ExecutableIcon } from './Images'
@@ -7,10 +6,11 @@ import { ExecutableIcon } from './Images'
 type SideBarProps = {
   list: Executable[]
   onSelect: (executable: Executable | null) => void
+  onAddClick: () => void
+  onExploreClick: () => void
 }
 
-function SideBar({ list, onSelect }: SideBarProps): React.JSX.Element {
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+function SideBar({ list, onSelect, onAddClick, onExploreClick }: SideBarProps): React.JSX.Element {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const [filterText, setFilterText] = useState('')
@@ -56,7 +56,7 @@ function SideBar({ list, onSelect }: SideBarProps): React.JSX.Element {
           />
         )}
         <button
-          onClick={() => onSelect(null)}
+          onClick={() => onExploreClick()}
           className={`text-gray-400 hover:text-white flex-shrink-0 ${
             isCollapsed
               ? 'w-full h-12 flex items-center justify-center hover:bg-selection rounded'
@@ -71,7 +71,7 @@ function SideBar({ list, onSelect }: SideBarProps): React.JSX.Element {
           <ul className="space-y-1">
             {filteredList.map((executable) => (
               <li
-                className={`flex items-center gap-3 p-2 rounded hover:bg-selection cursor-pointer ${
+                className={`flex items-center gap-3 pl-1 rounded hover:bg-selection cursor-pointer ${
                   isCollapsed ? 'justify-center' : ''
                 }`}
                 key={executable.id}
@@ -79,14 +79,20 @@ function SideBar({ list, onSelect }: SideBarProps): React.JSX.Element {
                 title={executable.name}
               >
                 <div
-                  className={`flex items-center justify-center ${
+                  className={`flex items-center justify-center flex-shrink-0 ${
                     isCollapsed ? 'w-12 h-12' : 'w-10 h-10'
                   }`}
                 >
                   <ExecutableIcon {...executable} />
                 </div>
                 {!isCollapsed && (
-                  <span className="text-sm font-medium truncate">{executable.name}</span>
+                  <span
+                    className={`text-sm font-medium truncate ${
+                      !executable.executablePath ? 'text-gray-500' : ''
+                    }`}
+                  >
+                    {executable.name}
+                  </span>
                 )}
               </li>
             ))}
@@ -100,7 +106,7 @@ function SideBar({ list, onSelect }: SideBarProps): React.JSX.Element {
 
       <div className={`mt-auto border-t border-gray-700 pt-2`}>
         <button
-          onClick={() => setIsAddDialogOpen(true)}
+          onClick={onAddClick}
           className={`w-full flex items-center gap-2 text-white rounded text-sm hover:bg-selection ${
             isCollapsed ? 'justify-center h-12' : 'px-3 py-2'
           }`}
@@ -110,7 +116,6 @@ function SideBar({ list, onSelect }: SideBarProps): React.JSX.Element {
           {!isCollapsed && <span>Add Executable</span>}
         </button>
       </div>
-      {isAddDialogOpen && <AddExecutable onClose={() => setIsAddDialogOpen(false)} />}
     </aside>
   )
 }

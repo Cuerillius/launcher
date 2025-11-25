@@ -8,13 +8,16 @@ declare global {
       save: (executable: Executable) => Promise<{ success: boolean; path?: string; error?: string }>
       getAll: () => Promise<Executable[]>
       openFileDialog: () => Promise<string | null>
+      delete: (executable: Executable) => Promise<{ success: boolean; error?: string }>
     }
     executable: {
-      launch: (path: string) => void
+      launch: (id: string, path: string) => void
       stop: () => void
       onExecutableStarted: (callback: (...args: any[]) => void) => void
       onExecutableStopped: (callback: (...args: any[]) => void) => void
       removeListeners: () => void
+      getSettings: () => Promise<Settings | {}>
+      getRunningExecutableStatus: () => Promise<ExecutableStatus>
     }
   }
 }
