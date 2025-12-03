@@ -16,8 +16,10 @@ pub enum Platform {
     PlayStation,
     Nintendo,
     GOG,
+    VR,
     Pirated,
-    Other(String),
+    Unknown,
+    Other,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -31,28 +33,28 @@ pub struct Executable {
     pub banner: Option<String>,
     pub grid: Option<String>,
     pub playtime: Option<u64>,
-    pub platform: Platform,
+    pub platform: Option<Platform>,
+    pub lastLaunched: Option<u64>,
 }
 
 pub struct LauncherState {
     pub running_processes: Arc<Mutex<HashMap<String, Vec<u32>>>>,
 }
-
 #[tauri::command]
-pub async fn save_executable(app: AppHandle, mut exe: Executable) -> Result<(), String> {
+pub async fn save_executable(app: AppHandle, mut executable: Executable) -> Result<(), String> {
     let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    let exe_dir = app_dir.join("executables").join(exe.id.to_string());
+    let exe_dir = app_dir.join("executables").join(executable.id.to_string());
     let resources_dir = exe_dir.join("resources");
 
     fs::create_dir_all(&resources_dir).map_err(|e| e.to_string())?;
 
-    exe.icon = handle_resource(&exe.icon, &resources_dir, "icon").await?;
-    exe.logo = handle_resource(&exe.logo, &resources_dir, "logo").await?;
-    exe.banner = handle_resource(&exe.banner, &resources_dir, "banner").await?;
-    exe.grid = handle_resource(&exe.grid, &resources_dir, "grid").await?;
+    executable.icon = handle_resource(&executable.icon, &resources_dir, "icon").await?;
+    executable.logo = handle_resource(&executable.logo, &resources_dir, "logo").await?;
+    executable.banner = handle_resource(&executable.banner, &resources_dir, "banner").await?;
+    executable.grid = handle_resource(&executable.grid, &resources_dir, "grid").await?;
 
     let json_path = exe_dir.join("data.json");
-    let json_data = serde_json::to_string_pretty(&exe).map_err(|e| e.to_string())?;
+    let json_data = serde_json::to_string_pretty(&executable).map_err(|e| e.to_string())?;
 
     fs::write(json_path, json_data).map_err(|e| e.to_string())?;
 
@@ -73,7 +75,12 @@ async fn handle_resource(
     let file_name = format!("{}.{}", base_name, extension);
     let dest_path = target_dir.join(&file_name);
 
-    if src_str.starts_with("http") {
+    if src_str.starts_with("asset:")
+        || src_str.starts_with("http://asset.localhost")
+        || src_str.starts_with("https://asset.localhost")
+    {
+        return Ok(Some(dest_path.to_string_lossy().to_string()));
+    } else if src_str.starts_with("http") {
         let response = reqwest::get(src_str)
             .await
             .map_err(|e| format!("Download failed: {}", e))?;
@@ -139,13 +146,27 @@ pub async fn get_all_executables(app: AppHandle) -> Result<Vec<Executable>, Stri
             let json_path = path.join("data.json");
             if json_path.exists() {
                 if let Ok(data) = fs::read_to_string(&json_path) {
-                    if let Ok(exe) = serde_json::from_str::<Executable>(&data) {
+                    if let Ok(mut exe) = serde_json::from_str::<Executable>(&data) {
+                        let resolve = |p: Option<String>| -> Option<String> {
+                            p.map(|s| path.join(s).to_string_lossy().to_string())
+                        };
+
+                        exe.icon = resolve(exe.icon);
+                        exe.logo = resolve(exe.logo);
+                        exe.banner = resolve(exe.banner);
+                        exe.grid = resolve(exe.grid);
+
                         executables.push(exe);
                     }
                 }
             }
         }
     }
+
+    println!(
+        "Found executables: {:?}",
+        executables.iter().map(|e| &e.name).collect::<Vec<_>>()
+    );
 
     Ok(executables)
 }
