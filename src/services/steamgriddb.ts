@@ -1,4 +1,5 @@
 import { fetch } from "@tauri-apps/plugin-http";
+import { loadKey } from "./keystore";
 
 export interface SGDBGame {
   id: number;
@@ -12,8 +13,6 @@ interface SGDBResponse {
   data: SGDBGame[];
 }
 
-const API_KEY = "YOUR_STEAMGRIDDB_API_KEY_HERE";
-
 export async function searchSteamGridDB(query: string): Promise<SGDBGame[]> {
   if (!query) return [];
 
@@ -22,6 +21,7 @@ export async function searchSteamGridDB(query: string): Promise<SGDBGame[]> {
   )}`;
 
   try {
+    const API_KEY = await loadKey();
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -73,6 +73,7 @@ async function fetchImages(
   const url = `https://www.steamgriddb.com/api/v2/${type}/game/${gameId}`;
 
   try {
+    const API_KEY = await loadKey();
     const response = await fetch(url, {
       method: "GET",
       headers: {
