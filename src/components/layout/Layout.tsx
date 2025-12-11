@@ -20,7 +20,7 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-sidebar text-foreground">
-      <Sidebar />
+      <Sidebar executables={list} />
       <TopBar />
       <div
         data-tauri-drag-region

@@ -64,8 +64,6 @@ export function DynamicComboBox<T>({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          // KEPT: 'w-full' so it stretches to fit the container
-          // REMOVED: Hardcoded dark theme colors
           className={cn("w-full justify-between", className)}
         >
           {selectedItem ? getItemLabel(selectedItem) : placeholder}

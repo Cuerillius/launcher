@@ -13,15 +13,8 @@ export async function saveKey(key: string) {
 export async function loadKey() {
   try {
     const key = await invoke<string | null>("get_api_key");
-
-    if (key) {
-      console.log("Loaded Key:", key);
-    } else {
-      console.log("No key found. User needs to login.");
-    }
     return key;
   } catch (err) {
-    console.error("Failed to load key:", err);
     return null;
   }
 }
@@ -31,7 +24,6 @@ export async function isKeySet() {
     const key = await loadKey();
     return key !== null && key !== undefined && key !== "";
   } catch (err) {
-    console.error("Failed to check if key is set:", err);
     return false;
   }
 }

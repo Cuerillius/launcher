@@ -7,10 +7,18 @@ export async function getAllExecutables(): Promise<Executable[]> {
 
   return rawExecutables.map((exe) => ({
     ...exe,
-    icon: exe.icon ? convertFileSrc(exe.icon) : undefined,
-    logo: exe.logo ? convertFileSrc(exe.logo) : undefined,
-    banner: exe.banner ? convertFileSrc(exe.banner) : undefined,
-    grid: exe.grid ? convertFileSrc(exe.grid) : undefined,
+    icon: exe.icon
+      ? { path: convertFileSrc(exe.icon.path), source: exe.icon.source }
+      : undefined,
+    logo: exe.logo
+      ? { path: convertFileSrc(exe.logo.path), source: exe.logo.source }
+      : undefined,
+    banner: exe.banner
+      ? { path: convertFileSrc(exe.banner.path), source: exe.banner.source }
+      : undefined,
+    grid: exe.grid
+      ? { path: convertFileSrc(exe.grid.path), source: exe.grid.source }
+      : undefined,
   }));
 }
 

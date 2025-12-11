@@ -8,66 +8,63 @@ import TagInput from "@/components/inputs/TagInput";
 import { DynamicComboBox } from "@/components/inputs/DynamicCombobox";
 import { SelectEnum } from "@/components/inputs/SelectEnum";
 import { Executable, SourcePlatform } from "@/types/Executable";
-import { SGDBGame } from "@/services/steamgriddb";
+import { SearchResult } from "@/services/artworkService";
 
-type GameDetailsSectionProps = {
+type ExecutableDetailsSectionProps = {
   formData: Executable;
   setFormData: React.Dispatch<React.SetStateAction<Executable>>;
-  games: SGDBGame[];
-  selectedGame: SGDBGame | null;
+  searchResults: SearchResult[];
+  selectedResult: SearchResult | null;
   loading: boolean;
   hasApiKey: boolean;
   onSearchQuery: (query: string) => void;
-  onSelectGame: (game: SGDBGame | null) => void;
+  onSelectResult: (result: SearchResult | null) => void;
   onFileClick: () => void;
   onHandleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
-export function GameDetailsSection({
+export function ExecutableDetailsSection({
   formData,
   setFormData,
-  games,
-  selectedGame,
+  searchResults,
+  selectedResult,
   loading,
   hasApiKey,
   onSearchQuery,
-  onSelectGame,
+  onSelectResult,
   onFileClick,
   onHandleChange,
-}: GameDetailsSectionProps) {
+}: ExecutableDetailsSectionProps) {
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Search className="w-4 h-4 text-primary" />
-          Game Details
+          Executable Details
         </h2>
         <Separator className="mb-6" />
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-        {/* Identify Game */}
         <div className="col-span-full space-y-2">
-          <Label>Identify Game</Label>
-          <DynamicComboBox<SGDBGame>
-            items={games}
-            selectedItem={selectedGame}
+          <Label>Identify Executable</Label>
+          <DynamicComboBox<SearchResult>
+            items={searchResults}
+            selectedItem={selectedResult}
             isLoading={loading}
             onSearch={onSearchQuery}
-            onSelect={onSelectGame}
-            getItemValue={(game) => game.id}
-            getItemLabel={(game) => game.name}
+            onSelect={onSelectResult}
+            getItemValue={(item) => item.id}
+            getItemLabel={(item) => item.name}
             placeholder={
               hasApiKey
                 ? "Search SteamGridDB for metadata..."
                 : "API Key required for search"
             }
-            emptyText="No games found."
+            emptyText="No executables found."
             className="w-full"
           />
         </div>
 
-        {/* Executable Path */}
         <div className="col-span-full space-y-2">
           <Label htmlFor="exePath">Executable Path</Label>
           <div className="flex items-center gap-2">
@@ -75,7 +72,7 @@ export function GameDetailsSection({
               type="text"
               name="path"
               id="exePath"
-              placeholder="C:\Games\MyGame\game.exe"
+              placeholder="C:\Program Files\App\app.exe"
               value={formData.path}
               onChange={onHandleChange}
               className="font-mono text-sm"
@@ -91,7 +88,6 @@ export function GameDetailsSection({
           </div>
         </div>
 
-        {/* Args */}
         <div className="col-span-full space-y-2">
           <Label>Launch Arguments</Label>
           <TagInput
@@ -103,7 +99,6 @@ export function GameDetailsSection({
           />
         </div>
 
-        {/* Platform */}
         <div className="space-y-2">
           <Label>Platform</Label>
           <div className="[&>button]:w-full">
@@ -119,9 +114,8 @@ export function GameDetailsSection({
           </div>
         </div>
 
-        {/* Playtime */}
         <div className="space-y-2">
-          <Label>Playtime (Minutes)</Label>
+          <Label>Usage Time (Minutes)</Label>
           <NumberInput
             value={formData.playtime || 0}
             onChange={(value) =>

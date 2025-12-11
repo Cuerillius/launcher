@@ -63,7 +63,7 @@ export default function GridView({
           >
             <div className="relative h-full w-full">
               <TiltedCard
-                imageSrc={executable.grid}
+                imageSrc={executable.grid?.path}
                 altText={executable.name}
                 containerHeight="100%"
                 containerWidth="100%"
@@ -130,7 +130,7 @@ export default function GridView({
             >
               <div className="w-full h-full rounded-[20px] shadow-2xl">
                 <TiltedCard
-                  imageSrc={selectedExecutable.grid}
+                  imageSrc={selectedExecutable.grid?.path}
                   altText={selectedExecutable.name}
                   containerHeight="100%"
                   containerWidth="100%"

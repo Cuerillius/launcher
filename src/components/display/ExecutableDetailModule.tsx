@@ -13,7 +13,7 @@ function ExecutableDetailModule({ executable }: { executable: Executable }) {
   useEffect(() => {
     if (!executable?.banner) return;
     const img = new Image();
-    img.src = executable.banner;
+    img.src = executable.banner.path;
     img.crossOrigin = "Anonymous";
 
     img.onload = () => {

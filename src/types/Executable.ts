@@ -1,4 +1,5 @@
 import { UUID } from "crypto";
+import { Artwork } from "./Artwork";
 
 export enum SourcePlatform {
   Steam = "Steam",
@@ -17,10 +18,10 @@ export type Executable = {
   name: string;
   path?: string;
   args?: string[];
-  icon?: string;
-  logo?: string;
-  banner?: string;
-  grid?: string;
+  icon?: Artwork;
+  logo?: Artwork;
+  banner?: Artwork;
+  grid?: Artwork;
   playtime?: number;
   platform?: SourcePlatform;
   lastLaunched?: number;

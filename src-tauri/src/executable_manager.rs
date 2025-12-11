@@ -1,12 +1,16 @@
+use base64::{engine::general_purpose, Engine as _};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use serde_repr::{Deserialize_repr, Serialize_repr};
+use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use std::{collections::HashMap, process::Command};
 use sysinfo::{Pid, System};
 use tauri::{AppHandle, Manager, State};
+use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Platform {
@@ -22,97 +26,216 @@ pub enum Platform {
     Other,
 }
 
+#[derive(Serialize_repr, Deserialize_repr, Debug, Clone, PartialEq)]
+#[repr(u8)]
+pub enum ArtworkProvider {
+    STEAMGRIDDB = 0,
+    LOCAL = 1,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ArtworkResource {
+    pub remote_id: i64,
+    pub provider: ArtworkProvider,
+    pub path: String,
+    pub thumb: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Artwork {
+    pub path: String,
+    pub source: ArtworkResource,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Executable {
-    pub id: uuid::Uuid,
+    pub id: Uuid,
     pub name: String,
     pub path: Option<String>,
     pub args: Option<Vec<String>>,
-    pub icon: Option<String>,
-    pub logo: Option<String>,
-    pub banner: Option<String>,
-    pub grid: Option<String>,
-    pub playtime: Option<u64>,
+    pub icon: Option<Artwork>,
+    pub logo: Option<Artwork>,
+    pub banner: Option<Artwork>,
+    pub grid: Option<Artwork>,
+    pub playtime: Option<f64>,
     pub platform: Option<Platform>,
-    pub lastLaunched: Option<u64>,
+    pub last_launched: Option<i64>,
 }
 
 pub struct LauncherState {
     pub running_processes: Arc<Mutex<HashMap<String, Vec<u32>>>>,
 }
+
+// --- Commands ---
 #[tauri::command]
 pub async fn save_executable(app: AppHandle, mut executable: Executable) -> Result<(), String> {
     let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     let exe_dir = app_dir.join("executables").join(executable.id.to_string());
     let resources_dir = exe_dir.join("resources");
+    let json_path = exe_dir.join("data.json");
 
     fs::create_dir_all(&resources_dir).map_err(|e| e.to_string())?;
 
-    executable.icon = handle_resource(&executable.icon, &resources_dir, "icon").await?;
-    executable.logo = handle_resource(&executable.logo, &resources_dir, "logo").await?;
-    executable.banner = handle_resource(&executable.banner, &resources_dir, "banner").await?;
-    executable.grid = handle_resource(&executable.grid, &resources_dir, "grid").await?;
+    // Rule 2.5: Try to load existing data to compare source paths
+    let old_executable: Option<Executable> = if json_path.exists() {
+        match fs::read_to_string(&json_path) {
+            Ok(data) => serde_json::from_str(&data).ok(),
+            Err(_) => None,
+        }
+    } else {
+        None
+    };
 
-    let json_path = exe_dir.join("data.json");
+    // Helper to get the specific artwork from the old executable if it exists
+    let get_old_art = |exe: &Option<Executable>,
+                       selector: fn(&Executable) -> &Option<Artwork>|
+     -> Option<Artwork> { exe.as_ref().and_then(|x| selector(x).clone()) };
+
+    // Process each artwork type, passing in the corresponding old artwork for comparison
+    executable.icon = handle_resource(
+        &executable.icon,
+        &get_old_art(&old_executable, |e| &e.icon),
+        &resources_dir,
+        "icon",
+    )
+    .await?;
+
+    executable.logo = handle_resource(
+        &executable.logo,
+        &get_old_art(&old_executable, |e| &e.logo),
+        &resources_dir,
+        "logo",
+    )
+    .await?;
+
+    executable.banner = handle_resource(
+        &executable.banner,
+        &get_old_art(&old_executable, |e| &e.banner),
+        &resources_dir,
+        "banner",
+    )
+    .await?;
+
+    executable.grid = handle_resource(
+        &executable.grid,
+        &get_old_art(&old_executable, |e| &e.grid),
+        &resources_dir,
+        "grid",
+    )
+    .await?;
+
     let json_data = serde_json::to_string_pretty(&executable).map_err(|e| e.to_string())?;
 
     fs::write(json_path, json_data).map_err(|e| e.to_string())?;
 
     Ok(())
 }
-
 async fn handle_resource(
-    source: &Option<String>,
+    new_artwork_opt: &Option<Artwork>,
+    old_artwork_opt: &Option<Artwork>, // Passed in for Rule 2.5
     target_dir: &Path,
     base_name: &str,
-) -> Result<Option<String>, String> {
-    let src_str = match source {
-        Some(s) if !s.is_empty() => s,
-        _ => return Ok(None),
+) -> Result<Option<Artwork>, String> {
+    let mut artwork = match new_artwork_opt {
+        Some(a) => a.clone(),
+        None => return Ok(None),
     };
 
-    let extension = get_extension(src_str).unwrap_or_else(|| "png".to_string());
+    // Rule 2: We primarily use source.path to determine what to do
+    let src_str = &artwork.source.path;
+
+    // Safety check: if source path is empty, we can't do anything
+    if src_str.is_empty() {
+        return Ok(None);
+    }
+
+    // Determine extension
+    let extension = if src_str.starts_with("data:image") {
+        get_extension_from_base64(src_str).unwrap_or_else(|| "png".to_string())
+    } else {
+        get_extension(src_str).unwrap_or_else(|| "png".to_string())
+    };
+
     let file_name = format!("{}.{}", base_name, extension);
     let dest_path = target_dir.join(&file_name);
+    let relative_path = format!("resources/{}", file_name);
 
-    if src_str.starts_with("asset:")
-        || src_str.starts_with("http://asset.localhost")
-        || src_str.starts_with("https://asset.localhost")
-    {
-        return Ok(Some(dest_path.to_string_lossy().to_string()));
-    } else if src_str.starts_with("http") {
-        let response = reqwest::get(src_str)
-            .await
-            .map_err(|e| format!("Download failed: {}", e))?;
-
-        let bytes = response
-            .bytes()
-            .await
-            .map_err(|e| format!("Failed to read bytes: {}", e))?;
-
-        fs::write(&dest_path, bytes).map_err(|e| e.to_string())?;
-    } else {
-        let src_path = Path::new(src_str);
-        if src_path.exists() {
-            fs::copy(src_path, &dest_path).map_err(|e| e.to_string())?;
-        } else {
-            return Ok(None);
+    // Rule 2.5: If savedata exists and source.path is identical, do not download/process again.
+    // We check if the destination file actually exists to be safe.
+    if let Some(old_artwork) = old_artwork_opt {
+        if old_artwork.source.path == artwork.source.path && dest_path.exists() {
+            // Just ensure the path points to the existing local resource
+            artwork.path = relative_path;
+            return Ok(Some(artwork));
         }
     }
 
-    Ok(Some(dest_path.to_string_lossy().to_string()))
-}
+    match artwork.source.provider {
+        // Rule 4: If provider is STEAMGRIDDB and link is http(s)
+        ArtworkProvider::STEAMGRIDDB => {
+            if src_str.starts_with("http://") || src_str.starts_with("https://") {
+                // Determine if we should download
+                // (Asset localhost check kept from your original code just in case)
+                if !src_str.contains("asset.localhost") {
+                    let response = reqwest::get(src_str)
+                        .await
+                        .map_err(|e| format!("Download failed: {}", e))?;
+                    let bytes = response
+                        .bytes()
+                        .await
+                        .map_err(|e| format!("Failed to read bytes: {}", e))?;
+                    fs::write(&dest_path, bytes).map_err(|e| e.to_string())?;
+                }
+            }
+        }
+        // Rule 3: If provider is LOCAL
+        ArtworkProvider::LOCAL => {
+            if src_str.starts_with("data:image") {
+                // Rule 3 (Base64): Parse it and save the image
+                // Format is usually "data:image/png;base64,....."
+                if let Some(comma_index) = src_str.find(',') {
+                    let base64_data = &src_str[comma_index + 1..];
+                    let decoded = general_purpose::STANDARD
+                        .decode(base64_data)
+                        .map_err(|e| format!("Base64 decode failed: {}", e))?;
+                    fs::write(&dest_path, decoded).map_err(|e| e.to_string())?;
+                }
+            } else {
+                // Standard Local File Copy
+                let src_path = Path::new(src_str);
 
-fn get_extension(path_str: &str) -> Option<String> {
-    let clean_path = path_str.split('?').next().unwrap_or(path_str);
-    Path::new(clean_path)
-        .extension()
-        .and_then(|os_str| os_str.to_str())
-        .map(|s| s.to_lowercase())
+                // Rule 1: Never update the path with itself
+                // We check if source and destination are different files
+                // We also check if the source actually exists
+                if src_path.exists() {
+                    // Canonicalize paths to compare absolute paths effectively to ensure they aren't the same file
+                    let abs_src = fs::canonicalize(src_path).unwrap_or_default();
+                    let abs_dest =
+                        fs::canonicalize(&dest_path).unwrap_or_else(|_| dest_path.clone());
+
+                    if abs_src != abs_dest {
+                        fs::copy(src_path, &dest_path).map_err(|e| e.to_string())?;
+                    }
+                }
+            }
+        }
+        // Handle other providers or fallbacks if necessary
+        _ => {
+            // Fallback logic could go here
+        }
+    }
+
+    // Finalize: Set the artwork.path to the relative resources path
+    artwork.path = relative_path;
+
+    Ok(Some(artwork))
 }
 
 #[tauri::command]
-pub async fn delete_executable(app: AppHandle, id: uuid::Uuid) -> Result<(), String> {
+pub async fn delete_executable(app: AppHandle, id: Uuid) -> Result<(), String> {
     let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     let exe_dir = app_dir.join("executables").join(id.to_string());
 
@@ -129,7 +252,6 @@ pub async fn delete_executable(app: AppHandle, id: uuid::Uuid) -> Result<(), Str
 pub async fn get_all_executables(app: AppHandle) -> Result<Vec<Executable>, String> {
     let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     let executables_dir = app_dir.join("executables");
-
     let mut executables = Vec::new();
 
     if !executables_dir.exists() {
@@ -147,14 +269,18 @@ pub async fn get_all_executables(app: AppHandle) -> Result<Vec<Executable>, Stri
             if json_path.exists() {
                 if let Ok(data) = fs::read_to_string(&json_path) {
                     if let Ok(mut exe) = serde_json::from_str::<Executable>(&data) {
-                        let resolve = |p: Option<String>| -> Option<String> {
-                            p.map(|s| path.join(s).to_string_lossy().to_string())
+                        let resolve_artwork = |mut art: Artwork| -> Artwork {
+                            let p = Path::new(&art.path);
+                            if p.is_relative() {
+                                art.path = path.join(p).to_string_lossy().to_string();
+                            }
+                            art
                         };
 
-                        exe.icon = resolve(exe.icon);
-                        exe.logo = resolve(exe.logo);
-                        exe.banner = resolve(exe.banner);
-                        exe.grid = resolve(exe.grid);
+                        exe.icon = exe.icon.map(resolve_artwork);
+                        exe.logo = exe.logo.map(resolve_artwork);
+                        exe.banner = exe.banner.map(resolve_artwork);
+                        exe.grid = exe.grid.map(resolve_artwork);
 
                         executables.push(exe);
                     }
@@ -163,21 +289,33 @@ pub async fn get_all_executables(app: AppHandle) -> Result<Vec<Executable>, Stri
         }
     }
 
-    println!(
-        "Found executables: {:?}",
-        executables.iter().map(|e| &e.name).collect::<Vec<_>>()
-    );
-
     Ok(executables)
 }
+
+fn get_extension_from_base64(data: &str) -> Option<String> {
+    if data.starts_with("data:image/") {
+        let end = data.find(';')?;
+        let ext = &data[11..end];
+        return Some(ext.to_string());
+    }
+    None
+}
+
+/// Helper to get extension from file path
+fn get_extension(path_str: &str) -> Option<String> {
+    Path::new(path_str)
+        .extension()
+        .and_then(|os_str| os_str.to_str())
+        .map(|s| s.to_string())
+}
+
 #[tauri::command]
 pub async fn launch_executable(
     app: AppHandle,
     state: State<'_, LauncherState>,
-    id: uuid::Uuid,
+    id: Uuid,
 ) -> Result<(), String> {
     let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
-
     let json_path = app_dir
         .join("executables")
         .join(id.to_string())
@@ -221,7 +359,10 @@ pub async fn launch_executable(
             .map_err(|_| "Lock failed".to_string())?;
         running_map.insert(game_id.clone(), vec![initial_pid]);
     }
+
     let pid_tracker = state.running_processes.clone();
+
+    update_playtime_on_disk(&json_path, 0);
 
     tauri::async_runtime::spawn(async move {
         monitor_process(pid_tracker, game_id, initial_pid, json_path).await;
@@ -229,14 +370,14 @@ pub async fn launch_executable(
 
     Ok(())
 }
+
 async fn monitor_process(
     process_map: Arc<Mutex<HashMap<String, Vec<u32>>>>,
     game_id: String,
     initial_pid: u32,
-    json_path: std::path::PathBuf,
+    json_path: PathBuf,
 ) {
     let mut sys = System::new_all();
-
     let mut tracked_pids: HashSet<Pid> = HashSet::new();
     tracked_pids.insert(Pid::from_u32(initial_pid));
 
@@ -254,9 +395,7 @@ async fn monitor_process(
                 }
             }
         }
-
         for child in new_children {
-            println!("Found new child process: {}", child);
             tracked_pids.insert(child);
         }
 
@@ -273,95 +412,75 @@ async fn monitor_process(
             }
         }
 
-        if last_save_time.elapsed().as_secs() >= 300 {
-            let seconds_passed = last_save_time.elapsed().as_secs();
+        let seconds_passed = last_save_time.elapsed().as_secs();
+        if seconds_passed >= 60 {
             update_playtime_on_disk(&json_path, seconds_passed);
             last_save_time = std::time::Instant::now();
         }
 
         if tracked_pids.is_empty() {
-            let seconds_passed = last_save_time.elapsed().as_secs();
-            if seconds_passed > 0 {
-                update_playtime_on_disk(&json_path, seconds_passed);
+            if last_save_time.elapsed().as_secs() > 0 {
+                update_playtime_on_disk(&json_path, last_save_time.elapsed().as_secs());
             }
             break;
         }
     }
 }
+
+fn update_playtime_on_disk(json_path: &Path, seconds_to_add: u64) {
+    if let Ok(data) = fs::read_to_string(json_path) {
+        if let Ok(mut exe) = serde_json::from_str::<Executable>(&data) {
+            let current_minutes = exe.playtime.unwrap_or(0.0);
+            let minutes_to_add = seconds_to_add as f64 / 60.0;
+
+            if minutes_to_add > 0.0 {
+                exe.playtime = Some(current_minutes + minutes_to_add);
+            }
+
+            exe.last_launched = Some(Utc::now().timestamp_millis());
+
+            if let Ok(json) = serde_json::to_string_pretty(&exe) {
+                let _ = fs::write(json_path, json);
+            }
+        }
+    }
+}
+
 #[tauri::command]
-pub async fn get_running_executables(
-    state: State<'_, LauncherState>,
-) -> Result<Vec<uuid::Uuid>, String> {
+pub async fn get_running_executables(state: State<'_, LauncherState>) -> Result<Vec<Uuid>, String> {
     let map = state
         .running_processes
         .lock()
         .map_err(|_| "Failed to lock state".to_string())?;
-
-    let ids = map
-        .keys()
-        .filter_map(|k| uuid::Uuid::parse_str(k).ok())
-        .collect();
-
-    Ok(ids)
+    Ok(map.keys().filter_map(|k| Uuid::parse_str(k).ok()).collect())
 }
-#[tauri::command]
-pub async fn stop_executable(
-    state: State<'_, LauncherState>,
-    id: uuid::Uuid,
-) -> Result<(), String> {
-    let game_id = id.to_string();
 
+#[tauri::command]
+pub async fn stop_executable(state: State<'_, LauncherState>, id: Uuid) -> Result<(), String> {
+    let game_id = id.to_string();
     let pids_to_kill: Option<Vec<u32>> = {
         let map = state
             .running_processes
             .lock()
-            .map_err(|_| "Failed to lock state".to_string())?;
-
+            .map_err(|_| "Lock failed".to_string())?;
         map.get(&game_id).cloned()
     };
 
     if let Some(pids) = pids_to_kill {
         let s = System::new_all();
-
         for pid_u32 in pids {
-            let pid = Pid::from_u32(pid_u32);
-
-            if let Some(process) = s.process(pid) {
-                if process.kill() {
-                    println!("Killed process: {}", pid_u32);
-                } else {
-                    println!(
-                        "Failed to kill process (might already be dead): {}",
-                        pid_u32
-                    );
-                }
+            if let Some(process) = s.process(Pid::from_u32(pid_u32)) {
+                process.kill();
             }
         }
         let mut map = state
             .running_processes
             .lock()
-            .map_err(|_| "Failed to lock state".to_string())?;
-
+            .map_err(|_| "Lock failed".to_string())?;
         map.remove(&game_id);
     } else {
-        return Err("Game is not currently running".to_string());
+        return Err("Game is not running".to_string());
     }
 
     Ok(())
-}
-
-fn update_playtime_on_disk(json_path: &Path, seconds_to_add: u64) {
-    if let Ok(data) = fs::read_to_string(json_path) {
-        if let Ok(mut exe) = serde_json::from_str::<Executable>(&data) {
-            let current_minutes = exe.playtime.unwrap_or(0);
-            let minutes_to_add = seconds_to_add / 60;
-            if minutes_to_add > 0 {
-                exe.playtime = Some(current_minutes + minutes_to_add);
-
-                if let Ok(json) = serde_json::to_string_pretty(&exe) {
-                    let _ = fs::write(json_path, json);
-                }
-            }
-        }
-    }
 }

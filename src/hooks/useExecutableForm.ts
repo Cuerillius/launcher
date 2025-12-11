@@ -1,16 +1,15 @@
 import { useState, useEffect } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Executable, SourcePlatform } from "@/types/Executable";
-import {
-  getGameImages,
-  searchSteamGridDB,
-  SGDBGame,
-  SGDBGameImages,
-} from "@/services/steamgriddb";
 import { toast } from "sonner";
 import { isKeySet } from "@/services/keystore";
+import { ArtworkSet } from "@/types/Artwork";
+import {
+  handleGetArtworks,
+  handleSearch,
+  SearchResult,
+} from "@/services/artworkService";
 
-// Simple debounce implementation
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
   useEffect(() => {
@@ -37,31 +36,30 @@ export function useExecutableForm({
       name: "",
       path: "",
       args: [],
-      icon: "",
-      logo: "",
-      banner: "",
-      grid: "",
+      icon: undefined,
+      logo: undefined,
+      banner: undefined,
+      grid: undefined,
       playtime: 0,
       platform: SourcePlatform.Unknown,
     }
   );
 
-  const [games, setGames] = useState<SGDBGame[]>([]);
-  const [selectedGame, setSelectedGame] = useState<SGDBGame | null>(null);
+  const [games, setGames] = useState<SearchResult[]>([]);
+  const [selectedGame, setSelectedGame] = useState<SearchResult | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
-  const [artwork, setArtwork] = useState<SGDBGameImages>({
-    grids: [],
+  const [artwork, setArtwork] = useState<ArtworkSet>({
     heroes: [],
     logos: [],
     icons: [],
+    grids: [],
   });
 
   const debouncedQuery = useDebounce(query, 500);
 
-  // Check API Key
   useEffect(() => {
     const checkKey = async () => {
       const exists = await isKeySet();
@@ -70,14 +68,13 @@ export function useExecutableForm({
     checkKey();
   }, []);
 
-  // Initial Data Auto-fetch
   useEffect(() => {
     const initializeArtwork = async () => {
       if (initialData?.name && !selectedGame?.id) {
         try {
-          const games = await searchSteamGridDB(initialData.name);
+          const games = await handleSearch(initialData.name);
           if (games.length > 0) {
-            const images = await getGameImages(games[0].id);
+            const images = await handleGetArtworks(games[0].id);
             setArtwork(images);
             setSelectedGame(games[0]);
           }
@@ -89,22 +86,28 @@ export function useExecutableForm({
     initializeArtwork();
   }, [initialData]);
 
-  // Handle Game Selection
   useEffect(() => {
     if (selectedGame?.id) {
-      // Update name if selected from dropdown
       setFormData((prev) => ({ ...prev, name: selectedGame.name }));
 
-      getGameImages(selectedGame.id).then((images) => {
+      handleGetArtworks(selectedGame.id).then((images) => {
         setArtwork(images);
 
         if (autoSelectImages) {
           setFormData((prev) => ({
             ...prev,
-            grid: images.grids[0]?.url || "",
-            banner: images.heroes[0]?.url || "",
-            logo: images.logos[0]?.url || "",
-            icon: images.icons[0]?.url || "",
+            grid: images.grids[0]
+              ? { path: images.grids[0].path, source: images.grids[0] }
+              : undefined,
+            banner: images.heroes[0]
+              ? { path: images.heroes[0].path, source: images.heroes[0] }
+              : undefined,
+            logo: images.logos[0]
+              ? { path: images.logos[0].path, source: images.logos[0] }
+              : undefined,
+            icon: images.icons[0]
+              ? { path: images.icons[0].path, source: images.icons[0] }
+              : undefined,
           }));
         }
       });
@@ -120,7 +123,7 @@ export function useExecutableForm({
       }
       setLoading(true);
       try {
-        const results = await searchSteamGridDB(debouncedQuery);
+        const results = await handleSearch(debouncedQuery);
         setGames(results);
       } finally {
         setLoading(false);

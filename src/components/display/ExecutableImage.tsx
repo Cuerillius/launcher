@@ -7,7 +7,7 @@ export function ExecutableIcon({ executable }: { executable: Executable }) {
       <div className={` ${!executable.path ? "opacity-60" : ""}`}>
         <img
           className="w-8 h-8 object-cover rounded-md"
-          src={executable.icon}
+          src={executable.icon.path}
           alt={`${executable.name} icon`}
         />
       </div>
@@ -25,7 +25,7 @@ export function ExecutableBanner(executable: Executable) {
   if (executable.banner) {
     return (
       <img
-        src={executable.banner}
+        src={executable.banner.path}
         alt={`${executable.name} banner`}
         className="absolute inset-0 h-full w-full object-cover"
       />
@@ -43,7 +43,7 @@ export function ExecutableLogo(executable: Executable) {
   if (executable.logo) {
     return (
       <img
-        src={executable.logo}
+        src={executable.logo.path}
         alt={`${executable.name} title`}
         className="object-contain object-left w-auto h-auto
              max-h-40 max-w-[20rem] 

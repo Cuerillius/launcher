@@ -1,10 +1,9 @@
 import { LayoutGrid, PanelLeft, Plus, Search } from "lucide-react";
 
 import { Executable } from "@/types/Executable";
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 
 import { cn } from "@/lib/utils";
-import { getAllExecutables } from "@/services/executables";
 import { Logo } from "@/assets/Logo";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -12,17 +11,11 @@ import { ScrollArea } from "../ui/scroll-area";
 import { ExecutableIcon } from "../display/ExecutableImage";
 import { useAppNavigation } from "@/hooks/useAppNavigation";
 
-function Sidebar() {
+function Sidebar({ executables }: { executables: Executable[] }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [executables, setExecutables] = useState<Executable[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   const { goHome, goGrid, goExecutable, goAdd } = useAppNavigation();
-
-  useEffect(() => {
-    getAllExecutables().then(setExecutables);
-  }, []);
-
   const filteredExecutables = useMemo(() => {
     if (!searchTerm) return executables;
     return executables.filter((exe) =>

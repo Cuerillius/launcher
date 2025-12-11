@@ -1,9 +1,9 @@
 import { useOutletContext, useParams } from "react-router-dom";
-import { ExecutableForm } from "../components/ExecutableForm";
 import { AppContextType, Executable } from "@/types/Executable";
 import { useMemo } from "react";
 import { deleteExecutable, saveExecutable } from "@/services/executables";
 import { useAppNavigation } from "@/hooks/useAppNavigation";
+import { ExecutableForm } from "@/components/inputs/ExecutableForm";
 
 export function Edit() {
   const { refreshList, executables } = useOutletContext<AppContextType>();
