@@ -51,8 +51,8 @@ export default function GridView({
   }, []);
 
   return (
-    <ScrollArea className="h-full w-full ">
-      <div className="grid sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 sm:gap-6 md:gap-8 p-4 sm:p-6 md:p-8">
+    <ScrollArea className="h-full w-full @container">
+      <div className="grid @md:grid-cols-2 @xl:grid-cols-4 @3xl:grid-cols-6 @6xl:grid-cols-8 gap-4 @sm:gap-6 @md:gap-8 p-4 @sm:p-6 @md:p-8">
         {executables.map((executable) => (
           <div
             key={executable.id}
@@ -147,21 +147,22 @@ export default function GridView({
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20, x: "-50%" }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{
                 opacity: 1,
                 y: 0,
-                x: "-50%",
                 transition: { delay: 0.3, duration: 0.3 },
               }}
-              exit={{ opacity: 0, x: "-50%", transition: { duration: 0.2 } }}
-              className="fixed pointer-events-auto z-[60] flex items-center gap-3"
+              exit={{ opacity: 0, y: 20, transition: { duration: 0.2 } }}
+              className="fixed pointer-events-auto z-60 flex items-center justify-center gap-3"
               style={{
-                top: "calc(50% + 35vh)",
-                left: "50%",
+                bottom: 0,
+                left: 0,
+                width: "100%",
+                height: "15vh",
               }}
             >
-              <div className="mt-6 lg:mt-12 scale-125 lg:scale-150 origin-top">
+              <div className="scale-125 lg:scale-150 origin-center">
                 <LaunchButton
                   executable={selectedExecutable}
                   onDetailClick={() =>

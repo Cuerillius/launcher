@@ -32,9 +32,7 @@ export function ExecutableBanner(executable: Executable) {
     );
   } else {
     return (
-      <div className="absolute inset-0 h-full w-full bg-selection flex items-center justify-center text-2xl">
-        {executable.name}
-      </div>
+      <div className="absolute inset-0 h-full w-full bg-selection flex items-center justify-center text-2xl"></div>
     );
   }
 }
@@ -57,3 +55,5 @@ export function ExecutableLogo(executable: Executable) {
     );
   }
 }
+
+// grid image is not here because it needs special handling

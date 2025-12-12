@@ -118,7 +118,6 @@ export default function TiltedCard({
       >
         {imageSrc ? (
           <>
-            {/* Glow Element */}
             <motion.div
               className="absolute top-0 left-0 w-full h-full rounded-[15px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
               style={{
@@ -132,7 +131,6 @@ export default function TiltedCard({
               />
             </motion.div>
 
-            {/* Main Image */}
             <motion.img
               src={imageSrc}
               alt={altText}
@@ -144,7 +142,6 @@ export default function TiltedCard({
             />
           </>
         ) : (
-          // Fallback UI when imageSrc is not provided
           <div
             className="absolute top-0 left-0 w-full h-full bg-gray-200 rounded-[15px] flex items-center justify-center p-4"
             style={{
