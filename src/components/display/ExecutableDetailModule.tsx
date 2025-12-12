@@ -1,44 +1,13 @@
-import { useEffect, useState } from "react";
-import ColorThief from "colorthief";
 import { Executable } from "@/types/Executable";
 import Aurora from "./Aurora";
 
 function ExecutableDetailModule({ executable }: { executable: Executable }) {
-  const [colors, setColors] = useState<string[]>([
-    "#5227FF",
-    "#7cff67",
-    "#5227FF",
-  ]);
-
-  useEffect(() => {
-    if (!executable?.banner) return;
-    const img = new Image();
-    img.src = executable.banner.path;
-    img.crossOrigin = "Anonymous";
-
-    img.onload = () => {
-      const colorThief = new ColorThief();
-      const palette = colorThief.getPalette(img, 3);
-      if (palette && palette.length >= 3) {
-        const hexColors = palette.map(
-          (rgb: number[]) =>
-            "#" +
-            rgb
-              .map((x) => {
-                const hex = x.toString(16);
-                return hex.length === 1 ? "0" + hex : hex;
-              })
-              .join("")
-        );
-        setColors(hexColors);
-      }
-    };
-  }, [executable?.banner]);
-
   return (
     <div className="relative bg-[#121214] border border-white/5 p-6 flex flex-col rounded-xl overflow-hidden">
       <div className="absolute inset-0">
-        <Aurora colorStops={colors} speed={0.3} />
+        {executable.colors && (
+          <Aurora colorStops={executable.colors} speed={0.3} />
+        )}
       </div>
 
       <div className="relative z-10 flex-1 grid grid-cols-3 gap-4">

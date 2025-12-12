@@ -1,5 +1,6 @@
 use base64::{engine::general_purpose, Engine as _};
 use chrono::Utc;
+use color_thief::ColorFormat;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::collections::{HashMap, HashSet};
@@ -63,13 +64,13 @@ pub struct Executable {
     pub playtime: Option<f64>,
     pub platform: Option<Platform>,
     pub last_launched: Option<i64>,
+    pub colors: Option<Vec<String>>,
 }
 
 pub struct LauncherState {
     pub running_processes: Arc<Mutex<HashMap<String, Vec<u32>>>>,
 }
 
-// --- Commands ---
 #[tauri::command]
 pub async fn save_executable(app: AppHandle, mut executable: Executable) -> Result<(), String> {
     let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
@@ -79,22 +80,18 @@ pub async fn save_executable(app: AppHandle, mut executable: Executable) -> Resu
 
     fs::create_dir_all(&resources_dir).map_err(|e| e.to_string())?;
 
-    // Rule 2.5: Try to load existing data to compare source paths
     let old_executable: Option<Executable> = if json_path.exists() {
-        match fs::read_to_string(&json_path) {
-            Ok(data) => serde_json::from_str(&data).ok(),
-            Err(_) => None,
-        }
+        fs::read_to_string(&json_path)
+            .ok()
+            .and_then(|data| serde_json::from_str(&data).ok())
     } else {
         None
     };
 
-    // Helper to get the specific artwork from the old executable if it exists
     let get_old_art = |exe: &Option<Executable>,
                        selector: fn(&Executable) -> &Option<Artwork>|
      -> Option<Artwork> { exe.as_ref().and_then(|x| selector(x).clone()) };
 
-    // Process each artwork type, passing in the corresponding old artwork for comparison
     executable.icon = handle_resource(
         &executable.icon,
         &get_old_art(&old_executable, |e| &e.icon),
@@ -102,7 +99,6 @@ pub async fn save_executable(app: AppHandle, mut executable: Executable) -> Resu
         "icon",
     )
     .await?;
-
     executable.logo = handle_resource(
         &executable.logo,
         &get_old_art(&old_executable, |e| &e.logo),
@@ -127,15 +123,31 @@ pub async fn save_executable(app: AppHandle, mut executable: Executable) -> Resu
     )
     .await?;
 
-    let json_data = serde_json::to_string_pretty(&executable).map_err(|e| e.to_string())?;
+    if let Some(banner) = &executable.banner {
+        let full_banner_path = exe_dir.join(&banner.path);
+        if full_banner_path.exists() {
+            let colors = get_dominant_colors(&full_banner_path, 5).map_err(|e| {
+                format!(
+                    "Failed to extract colors: {} | Path: {:?}",
+                    e, full_banner_path
+                )
+            })?;
+            executable.colors = Some(colors);
+        } else {
+            if let Some(old) = &old_executable {
+                executable.colors = old.colors.clone();
+            }
+        }
+    }
 
+    let json_data = serde_json::to_string_pretty(&executable).map_err(|e| e.to_string())?;
     fs::write(json_path, json_data).map_err(|e| e.to_string())?;
 
     Ok(())
 }
 async fn handle_resource(
     new_artwork_opt: &Option<Artwork>,
-    old_artwork_opt: &Option<Artwork>, // Passed in for Rule 2.5
+    old_artwork_opt: &Option<Artwork>,
     target_dir: &Path,
     base_name: &str,
 ) -> Result<Option<Artwork>, String> {
@@ -144,15 +156,12 @@ async fn handle_resource(
         None => return Ok(None),
     };
 
-    // Rule 2: We primarily use source.path to determine what to do
     let src_str = &artwork.source.path;
 
-    // Safety check: if source path is empty, we can't do anything
     if src_str.is_empty() {
         return Ok(None);
     }
 
-    // Determine extension
     let extension = if src_str.starts_with("data:image") {
         get_extension_from_base64(src_str).unwrap_or_else(|| "png".to_string())
     } else {
@@ -163,22 +172,16 @@ async fn handle_resource(
     let dest_path = target_dir.join(&file_name);
     let relative_path = format!("resources/{}", file_name);
 
-    // Rule 2.5: If savedata exists and source.path is identical, do not download/process again.
-    // We check if the destination file actually exists to be safe.
     if let Some(old_artwork) = old_artwork_opt {
         if old_artwork.source.path == artwork.source.path && dest_path.exists() {
-            // Just ensure the path points to the existing local resource
             artwork.path = relative_path;
             return Ok(Some(artwork));
         }
     }
 
     match artwork.source.provider {
-        // Rule 4: If provider is STEAMGRIDDB and link is http(s)
         ArtworkProvider::STEAMGRIDDB => {
             if src_str.starts_with("http://") || src_str.starts_with("https://") {
-                // Determine if we should download
-                // (Asset localhost check kept from your original code just in case)
                 if !src_str.contains("asset.localhost") {
                     let response = reqwest::get(src_str)
                         .await
@@ -191,11 +194,8 @@ async fn handle_resource(
                 }
             }
         }
-        // Rule 3: If provider is LOCAL
         ArtworkProvider::LOCAL => {
             if src_str.starts_with("data:image") {
-                // Rule 3 (Base64): Parse it and save the image
-                // Format is usually "data:image/png;base64,....."
                 if let Some(comma_index) = src_str.find(',') {
                     let base64_data = &src_str[comma_index + 1..];
                     let decoded = general_purpose::STANDARD
@@ -204,14 +204,9 @@ async fn handle_resource(
                     fs::write(&dest_path, decoded).map_err(|e| e.to_string())?;
                 }
             } else {
-                // Standard Local File Copy
                 let src_path = Path::new(src_str);
 
-                // Rule 1: Never update the path with itself
-                // We check if source and destination are different files
-                // We also check if the source actually exists
                 if src_path.exists() {
-                    // Canonicalize paths to compare absolute paths effectively to ensure they aren't the same file
                     let abs_src = fs::canonicalize(src_path).unwrap_or_default();
                     let abs_dest =
                         fs::canonicalize(&dest_path).unwrap_or_else(|_| dest_path.clone());
@@ -222,16 +217,43 @@ async fn handle_resource(
                 }
             }
         }
-        // Handle other providers or fallbacks if necessary
-        _ => {
-            // Fallback logic could go here
-        }
     }
 
-    // Finalize: Set the artwork.path to the relative resources path
     artwork.path = relative_path;
 
     Ok(Some(artwork))
+}
+
+fn get_extension_from_base64(data: &str) -> Option<String> {
+    if data.starts_with("data:image/") {
+        let end = data.find(';')?;
+        let ext = &data[11..end];
+        return Some(ext.to_string());
+    }
+    None
+}
+
+fn get_extension(path_str: &str) -> Option<String> {
+    Path::new(path_str)
+        .extension()
+        .and_then(|os_str| os_str.to_str())
+        .map(|s| s.to_string())
+}
+
+fn get_dominant_colors(path: &std::path::Path, count: u8) -> Result<Vec<String>, String> {
+    let img = image::open(path).map_err(|e| format!("Image open error: {}", e))?;
+    let rgb_img = img.to_rgb8();
+    let buffer = rgb_img.as_raw();
+
+    let palette = color_thief::get_palette(buffer, ColorFormat::Rgb, 10, count)
+        .map_err(|e| format!("Color thief error: {:?}", e))?;
+
+    let hex_colors: Vec<String> = palette
+        .into_iter()
+        .map(|color| format!("#{:02x}{:02x}{:02x}", color.r, color.g, color.b))
+        .collect();
+
+    Ok(hex_colors)
 }
 
 #[tauri::command]
@@ -290,23 +312,6 @@ pub async fn get_all_executables(app: AppHandle) -> Result<Vec<Executable>, Stri
     }
 
     Ok(executables)
-}
-
-fn get_extension_from_base64(data: &str) -> Option<String> {
-    if data.starts_with("data:image/") {
-        let end = data.find(';')?;
-        let ext = &data[11..end];
-        return Some(ext.to_string());
-    }
-    None
-}
-
-/// Helper to get extension from file path
-fn get_extension(path_str: &str) -> Option<String> {
-    Path::new(path_str)
-        .extension()
-        .and_then(|os_str| os_str.to_str())
-        .map(|s| s.to_string())
 }
 
 #[tauri::command]

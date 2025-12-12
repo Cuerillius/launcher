@@ -153,8 +153,12 @@ export default function Aurora(props: AuroraProps) {
     if (geometry.attributes.uv) {
       delete geometry.attributes.uv;
     }
+    const initialStops =
+      colorStops && colorStops.length > 0
+        ? colorStops
+        : ["#000000", "#000000", "#000000"];
 
-    const colorStopsArray = colorStops.map((hex) => {
+    const colorStopsArray = initialStops.map((hex) => {
       const c = new Color(hex);
       return [c.r, c.g, c.b];
     });
@@ -164,7 +168,9 @@ export default function Aurora(props: AuroraProps) {
       fragment: FRAG,
       uniforms: {
         uTime: { value: 0 },
-        uAmplitude: { value: amplitude },
+        uAmplitude: {
+          value: colorStops && colorStops.length === 0 ? 0 : amplitude,
+        },
         uColorStops: { value: colorStopsArray },
         uResolution: { value: [ctn.offsetWidth, ctn.offsetHeight] },
         uBlend: { value: blend },
@@ -191,13 +197,25 @@ export default function Aurora(props: AuroraProps) {
       animateId = requestAnimationFrame(update);
       const { time = t * 0.01, speed = 1.0 } = propsRef.current;
       program.uniforms.uTime.value = time * speed * 0.1;
-      program.uniforms.uAmplitude.value = propsRef.current.amplitude ?? 1.0;
-      program.uniforms.uBlend.value = propsRef.current.blend ?? blend;
       const stops = propsRef.current.colorStops ?? colorStops;
-      program.uniforms.uColorStops.value = stops.map((hex: string) => {
-        const c = new Color(hex);
-        return [c.r, c.g, c.b];
-      });
+
+      if (stops.length > 0) {
+        program.uniforms.uAmplitude.value = propsRef.current.amplitude ?? 1.0;
+        program.uniforms.uBlend.value = propsRef.current.blend ?? blend;
+
+        program.uniforms.uColorStops.value = stops.map((hex: string) => {
+          const c = new Color(hex);
+          return [c.r, c.g, c.b];
+        });
+      } else {
+        program.uniforms.uAmplitude.value = 0;
+        program.uniforms.uColorStops.value = [
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0],
+        ];
+      }
+
       renderer.render({ scene: mesh });
     };
     animateId = requestAnimationFrame(update);

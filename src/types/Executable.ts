@@ -25,6 +25,7 @@ export type Executable = {
   playtime?: number;
   platform?: SourcePlatform;
   lastLaunched?: number;
+  colors?: string[];
 };
 
 export type AppContextType = {
