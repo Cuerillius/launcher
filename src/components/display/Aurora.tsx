@@ -141,13 +141,19 @@ export default function Aurora(props: AuroraProps) {
       antialias: true,
     });
     const gl = renderer.gl;
+
     gl.clearColor(0, 0, 0, 0);
+
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
     gl.canvas.style.backgroundColor = "transparent";
     gl.canvas.style.width = "100%";
     gl.canvas.style.height = "100%";
     gl.canvas.style.display = "block";
+
+    gl.canvas.style.opacity = "0";
+    gl.canvas.style.transition = "opacity 0.4s ease-in";
 
     const geometry = new Triangle(gl);
     if (geometry.attributes.uv) {
@@ -180,13 +186,23 @@ export default function Aurora(props: AuroraProps) {
     const mesh = new Mesh(gl, { geometry, program });
     ctn.appendChild(gl.canvas);
 
+    let isVisible = false;
+
     function resize() {
       if (!ctn) return;
       const width = ctn.offsetWidth;
       const height = ctn.offsetHeight;
       renderer.setSize(width, height);
       program.uniforms.uResolution.value = [width, height];
+
       renderer.render({ scene: mesh });
+
+      if (!isVisible) {
+        isVisible = true;
+        requestAnimationFrame(() => {
+          gl.canvas.style.opacity = "1";
+        });
+      }
     }
 
     const resizeObserver = new ResizeObserver(() => resize());
@@ -221,6 +237,7 @@ export default function Aurora(props: AuroraProps) {
     animateId = requestAnimationFrame(update);
 
     resize();
+
     return () => {
       cancelAnimationFrame(animateId);
       resizeObserver.disconnect();

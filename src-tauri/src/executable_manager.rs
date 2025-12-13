@@ -315,6 +315,36 @@ pub async fn get_all_executables(app: AppHandle) -> Result<Vec<Executable>, Stri
 }
 
 #[tauri::command]
+pub async fn get_executable(app: AppHandle, id: String) -> Result<Executable, String> {
+    let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+
+    let specific_dir = app_dir.join("executables").join(&id);
+    let json_path = specific_dir.join("data.json");
+
+    if !json_path.exists() {
+        return Err(format!("Executable with ID '{}' not found.", id));
+    }
+
+    let data = fs::read_to_string(&json_path).map_err(|e| e.to_string())?;
+    let mut exe = serde_json::from_str::<Executable>(&data).map_err(|e| e.to_string())?;
+
+    let resolve_artwork = |mut art: Artwork| -> Artwork {
+        let p = Path::new(&art.path);
+        if p.is_relative() {
+            art.path = specific_dir.join(p).to_string_lossy().to_string();
+        }
+        art
+    };
+
+    exe.icon = exe.icon.map(resolve_artwork);
+    exe.logo = exe.logo.map(resolve_artwork);
+    exe.banner = exe.banner.map(resolve_artwork);
+    exe.grid = exe.grid.map(resolve_artwork);
+
+    Ok(exe)
+}
+
+#[tauri::command]
 pub async fn launch_executable(
     app: AppHandle,
     state: State<'_, LauncherState>,

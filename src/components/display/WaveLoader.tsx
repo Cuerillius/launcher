@@ -15,7 +15,7 @@ export default function WaveLoader({
   return (
     <div
       className={cn(
-        `absolute inset-0 flex flex-col items-center justify-center z-100 backdrop-blur-xl`,
+        `w-full  h-full flex flex-col items-center justify-center z-20 backdrop-blur-xl`,
         className
       )}
     >

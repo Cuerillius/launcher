@@ -10,8 +10,8 @@ use std::{
 };
 
 use executable_manager::{
-    delete_executable, get_all_executables, get_running_executables, launch_executable,
-    save_executable, stop_executable,
+    delete_executable, get_all_executables, get_executable, get_running_executables,
+    launch_executable, save_executable, stop_executable,
 };
 
 use keystore::{get_api_key, save_api_key};
@@ -34,6 +34,7 @@ pub fn run() {
             launch_executable,
             get_running_executables,
             stop_executable,
+            get_executable,
             get_api_key,
             save_api_key
         ])

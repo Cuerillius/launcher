@@ -1,6 +1,4 @@
 import { LayoutGrid, PanelLeft, Plus, Search } from "lucide-react";
-
-import { Executable } from "@/types/Executable";
 import { useState, useMemo } from "react";
 
 import { cn } from "@/lib/utils";
@@ -8,21 +6,24 @@ import { Logo } from "@/assets/Logo";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { ScrollArea } from "../ui/scroll-area";
+import { Skeleton } from "../ui/skeleton";
 import { ExecutableIcon } from "../display/ExecutableImage";
-import { useAppNavigation } from "@/hooks/useAppNavigation";
+import { useNavigate } from "@tanstack/react-router";
+import { useAllExecutables } from "@/hooks/useExecutables";
 
-function Sidebar({ executables }: { executables: Executable[] }) {
+function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { goHome, goGrid, goExecutable, goAdd } = useAppNavigation();
+  const navigate = useNavigate();
+  const { data: executables = [], isLoading } = useAllExecutables();
+
   const filteredExecutables = useMemo(() => {
     if (!searchTerm) return executables;
     return executables.filter((exe) =>
       exe.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [executables, searchTerm]);
-
   return (
     <div
       data-collapsed={isCollapsed}
@@ -41,7 +42,7 @@ function Sidebar({ executables }: { executables: Executable[] }) {
         >
           <div
             className="flex items-center gap-2 cursor-pointer"
-            onClick={goHome}
+            onClick={() => navigate({ to: "/" })}
           >
             <div className="shrink-0 text-sidebar-foreground">
               <Logo />
@@ -63,7 +64,7 @@ function Sidebar({ executables }: { executables: Executable[] }) {
               variant="ghost"
               size="icon"
               className="size-8 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              onClick={goGrid}
+              onClick={() => navigate({ to: "/grid" })}
             >
               <LayoutGrid className="size-4" />
               <span className="sr-only">Open Grid</span>
@@ -85,6 +86,7 @@ function Sidebar({ executables }: { executables: Executable[] }) {
             <Search className="absolute left-2 top-2.5 size-4 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Search..."
+              disabled={isLoading}
               className="pl-8 h-9 bg-sidebar-accent/50 border-sidebar-border focus-visible:ring-sidebar-ring placeholder:text-muted-foreground text-sidebar-foreground"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -95,49 +97,78 @@ function Sidebar({ executables }: { executables: Executable[] }) {
 
       <ScrollArea className="flex-1 min-h-0 px-2 py-2">
         <div className="flex flex-col gap-1 pb-2">
-          {filteredExecutables.map((executable) => (
-            <Button
-              key={executable.id}
-              variant="ghost"
-              className={cn(
-                "flex w-full items-center h-10 group overflow-hidden",
-                isCollapsed ? "justify-center px-0" : "justify-start px-2",
-                "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                "text-muted-foreground"
-              )}
-              onClick={() => goExecutable(executable.id)}
-            >
-              <div className="shrink-0 flex items-center justify-center text-current group-hover:text-sidebar-accent-foreground transition-colors">
-                <ExecutableIcon executable={executable} />
+          {isLoading ? (
+            Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "flex items-center h-10 w-full",
+                  isCollapsed ? "justify-center px-0" : "px-2 gap-3"
+                )}
+              >
+                <Skeleton className="size-6 shrink-0 rounded-md bg-sidebar-accent" />
+                {!isCollapsed && (
+                  <Skeleton className="h-4 w-full max-w-[70%] rounded-md bg-sidebar-accent" />
+                )}
               </div>
-              {!isCollapsed && (
-                <span
-                  className="ml-3 text-sm font-medium truncate text-left flex-1 transition-colors"
-                  title={executable.name}
+            ))
+          ) : (
+            <>
+              {filteredExecutables.map((executable) => (
+                <Button
+                  key={executable.id}
+                  variant="ghost"
+                  className={cn(
+                    "flex w-full items-center h-10 group overflow-hidden",
+                    isCollapsed ? "justify-center px-0" : "justify-start px-2",
+                    "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    "text-muted-foreground"
+                  )}
+                  onClick={() =>
+                    navigate({
+                      to: `/executables/$id`,
+                      params: { id: executable.id },
+                    })
+                  }
                 >
-                  {executable.name}
-                </span>
-              )}
-            </Button>
-          ))}
+                  <div className="shrink-0 flex items-center justify-center text-current group-hover:text-sidebar-accent-foreground transition-colors">
+                    <ExecutableIcon executable={executable} />
+                  </div>
+                  {!isCollapsed && (
+                    <span
+                      className="ml-3 text-sm font-medium truncate text-left flex-1 transition-colors"
+                      title={executable.name}
+                    >
+                      {executable.name}
+                    </span>
+                  )}
+                </Button>
+              ))}
 
-          {filteredExecutables.length === 0 && searchTerm && !isCollapsed && (
-            <div className="text-sm text-muted-foreground text-center py-4">
-              Nothing here :(
-            </div>
+              {filteredExecutables.length === 0 &&
+                searchTerm &&
+                !isCollapsed && (
+                  <div className="text-sm text-muted-foreground text-center py-4">
+                    Nothing here :(
+                  </div>
+                )}
+            </>
           )}
         </div>
       </ScrollArea>
+
       <div className="mx-4 h-px bg-sidebar-border" />
+
       <div className="p-4 mt-auto border-sidebar-border shrink-0">
         <Button
           variant="ghost"
+          disabled={isLoading}
           className={cn(
             "w-full justify-start gap-2 px-2",
             "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
             isCollapsed && "justify-center px-0"
           )}
-          onClick={goAdd}
+          onClick={() => navigate({ to: "/add" })}
         >
           <div className="flex items-center justify-center rounded-md bg-sidebar-accent p-1 text-sidebar-accent-foreground">
             <Plus className="size-4" />
