@@ -23,7 +23,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_opener::init())
-        //.plugin(tauri_plugin_prevent_default::init())
+        .plugin(tauri_plugin_prevent_default::init())
         .manage(LauncherState {
             running_processes: Arc::new(Mutex::new(HashMap::new())),
         })
