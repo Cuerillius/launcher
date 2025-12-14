@@ -73,7 +73,7 @@ export default function NumberInput({
   };
 
   return (
-    <InputGroup>
+    <InputGroup className={className}>
       <InputGroupAddon align="inline-start">
         <InputGroupButton
           title="Subtract"

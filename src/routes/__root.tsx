@@ -2,7 +2,6 @@ import { createRootRoute, Outlet } from "@tanstack/react-router";
 import TopBar from "@/components/layout/TopBar";
 import { Toaster } from "@/components/ui/sonner";
 import Sidebar from "@/components/layout/Sidebar";
-import ErrorPage from "@/components/display/Error";
 
 export const Route = createRootRoute({
   component: RootComponent,

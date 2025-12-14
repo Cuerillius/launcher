@@ -4,6 +4,7 @@ import { motion, useMotionValue, useSpring } from "framer-motion";
 
 interface TiltedCardProps {
   imageSrc?: React.ComponentProps<"img">["src"];
+  playTime?: number;
   altText?: string;
   captionText?: string;
   containerHeight?: React.CSSProperties["height"];
@@ -26,6 +27,7 @@ const springValues: SpringOptions = {
 
 export default function TiltedCard({
   imageSrc,
+  playTime = 0,
   altText = "Tilted card image",
   captionText = "",
   containerHeight = "300px",
@@ -118,6 +120,9 @@ export default function TiltedCard({
       >
         {imageSrc ? (
           <>
+            <div className="absolute bottom-2 right-2 z-10 bg-black/50 text-white text-xs font-bold px-2 py-1 rounded-md backdrop-blur-md">
+              {Math.floor(playTime / 60)}h
+            </div>
             <motion.div
               className="absolute top-0 left-0 w-full h-full rounded-[15px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
               style={{
@@ -134,7 +139,7 @@ export default function TiltedCard({
             <motion.img
               src={imageSrc}
               alt={altText}
-              className="absolute top-0 left-0 object-cover rounded-[15px] will-change-transform [transform:translateZ(0)]"
+              className="absolute top-0 left-0 object-cover rounded-[15px] will-change-transform transform-[translateZ(0)]"
               style={{
                 width: imageWidth,
                 height: imageHeight,
@@ -150,6 +155,9 @@ export default function TiltedCard({
               transform: "translateZ(0)",
             }}
           >
+            <div className="absolute bottom-2 right-2 z-10 bg-black/50 text-white text-xs font-bold px-2 py-1 rounded-md backdrop-blur-md">
+              {Math.floor(playTime / 60)}h
+            </div>
             <span className="text-center text-gray-800 font-semibold">
               {altText}
             </span>
@@ -157,7 +165,7 @@ export default function TiltedCard({
         )}
 
         {displayOverlayContent && overlayContent && (
-          <motion.div className="absolute top-0 left-0 z-[2] will-change-transform [transform:translateZ(30px)]">
+          <motion.div className="absolute top-0 left-0 z-2 will-change-transform transform-[translateZ(30px)]">
             {overlayContent}
           </motion.div>
         )}

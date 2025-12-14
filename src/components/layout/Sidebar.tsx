@@ -64,7 +64,7 @@ function Sidebar() {
               variant="ghost"
               size="icon"
               className="size-8 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              onClick={() => navigate({ to: "/grid" })}
+              onClick={() => navigate({ to: "/" })}
             >
               <LayoutGrid className="size-4" />
               <span className="sr-only">Open Grid</span>

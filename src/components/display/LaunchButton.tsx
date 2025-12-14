@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import {
   getRunningExecutables,
   launchExecutable,
@@ -79,10 +80,11 @@ function ActionButton({
 }: ActionButtonProps) {
   const styles = {
     primary: {
-      container:
-        "border-transparent bg-primary text-black focus-visible:ring-primary-2",
-      main: "hover:bg-primary-2",
-      detail: "hover:bg-primary-2",
+      container: cn(
+        "border-transparent text-black focus-visible:ring-primary-2 bg-primary"
+      ),
+      main: cn("hover:bg-primary-2"),
+      detail: cn("hover:bg-primary-2"),
     },
     danger: {
       container:

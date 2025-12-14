@@ -1,9 +1,5 @@
 import { ExecutableForm } from "@/components/inputs/ExecutableForm";
-import {
-  useDeleteExecutable,
-  useExecutable,
-  useSaveExecutable,
-} from "@/hooks/useExecutables";
+import { useSaveExecutable } from "@/hooks/useExecutables";
 import { Executable } from "@/types/Executable";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 

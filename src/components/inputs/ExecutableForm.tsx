@@ -53,7 +53,7 @@ export function ExecutableForm({
   const [isApiKeyOpen, setIsApiKeyOpen] = useState(false);
 
   return (
-    <>
+    <div className="h-full w-full relative bg-background">
       <WaveLoader isVisible={saving} text="Saving..." />
 
       <ApiKeyConfigDialog
@@ -63,7 +63,7 @@ export function ExecutableForm({
         onKeySaved={() => setHasApiKey(true)}
       />
 
-      <ScrollArea className="h-full w-full flex">
+      <ScrollArea className="h-full w-full">
         <WarpDialog>
           <WarpDialogContent>
             <h2 className="mb-6 text-2xl font-bold">
@@ -79,46 +79,51 @@ export function ExecutableForm({
             </div>
           </WarpDialogContent>
 
-          <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
-            <div className="relative flex flex-col min-h-full w-full max-w-5xl mx-auto p-8 pb-0 animate-in fade-in duration-500">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col min-h-screen w-full"
+          >
+            <div className="flex-1 w-full p-6 lg:p-10 animate-in fade-in duration-500">
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
                 </div>
               </div>
+              <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 xl:grid-cols-12 xl:gap-12 items-start">
+                <div className="xl:col-span-5">
+                  <ExecutableDetailsSection
+                    formData={formData}
+                    setFormData={setFormData}
+                    searchResults={games}
+                    selectedResult={selectedGame}
+                    loading={loading}
+                    hasApiKey={hasApiKey}
+                    onSearchQuery={setQuery}
+                    onSelectResult={setSelectedGame}
+                    onFileClick={handleFileClick}
+                    onHandleChange={handleChange}
+                  />
+                </div>
 
-              <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-8 flex-1 items-start">
-                <ExecutableDetailsSection
-                  formData={formData}
-                  setFormData={setFormData}
-                  searchResults={games}
-                  selectedResult={selectedGame}
-                  loading={loading}
-                  hasApiKey={hasApiKey}
-                  onSearchQuery={setQuery}
-                  onSelectResult={setSelectedGame}
-                  onFileClick={handleFileClick}
-                  onHandleChange={handleChange}
-                />
-
-                <ArtworkSection
-                  formData={formData}
-                  setFormData={setFormData}
-                  artwork={artwork}
-                  hasApiKey={hasApiKey}
-                  onOpenApiKeyDialog={() => setIsApiKeyOpen(true)}
-                />
+                <div className="xl:col-span-7">
+                  <ArtworkSection
+                    formData={formData}
+                    setFormData={setFormData}
+                    artwork={artwork}
+                    hasApiKey={hasApiKey}
+                    onOpenApiKeyDialog={() => setIsApiKeyOpen(true)}
+                  />
+                </div>
               </div>
-
-              <ControlsFooter
-                submitLabel={submitLabel}
-                onCancel={onCancel}
-                onDelete={onDelete}
-              />
             </div>
+            <ControlsFooter
+              submitLabel={submitLabel}
+              onCancel={onCancel}
+              onDelete={onDelete}
+            />
           </form>
         </WarpDialog>
       </ScrollArea>
-    </>
+    </div>
   );
 }

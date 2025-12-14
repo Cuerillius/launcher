@@ -23,6 +23,9 @@ export default function GridView({
     height: number;
   } | null>(null);
 
+  const sortedExecutables = [...executables].sort(
+    (a, b) => (b.playtime ?? 0) - (a.playtime ?? 0)
+  );
   const selectedExecutable = executables.find((e) => e.id === selectedId);
 
   const handleCardClick = (
@@ -54,7 +57,7 @@ export default function GridView({
   return (
     <ScrollArea className="h-full w-full @container">
       <div className="grid @md:grid-cols-2 @xl:grid-cols-4 @3xl:grid-cols-6 @6xl:grid-cols-8 gap-4 @sm:gap-6 @md:gap-8 p-4 @sm:p-6 @md:p-8">
-        {executables.map((executable) => (
+        {sortedExecutables.map((executable) => (
           <div
             key={executable.id}
             onClick={(e) => handleCardClick(e, executable)}
@@ -65,6 +68,7 @@ export default function GridView({
             <div className="relative h-full w-full">
               <TiltedCard
                 imageSrc={executable.grid?.path}
+                playTime={executable.playtime}
                 altText={executable.name}
                 containerHeight="100%"
                 containerWidth="100%"
@@ -133,6 +137,7 @@ export default function GridView({
                 <TiltedCard
                   imageSrc={selectedExecutable.grid?.path}
                   altText={selectedExecutable.name}
+                  playTime={selectedExecutable.playtime}
                   containerHeight="100%"
                   containerWidth="100%"
                   imageHeight="100%"

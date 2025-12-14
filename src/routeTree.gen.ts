@@ -9,18 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as GridRouteImport } from './routes/grid'
 import { Route as AddRouteImport } from './routes/add'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ExecutablesIdRouteImport } from './routes/executables.$id'
 import { Route as EditIdRouteImport } from './routes/edit.$id'
 
-const GridRoute = GridRouteImport.update({
-  id: '/grid',
-  path: '/grid',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AddRoute = AddRouteImport.update({
   id: '/add',
   path: '/add',
@@ -51,7 +45,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/add': typeof AddRoute
-  '/grid': typeof GridRoute
   '/edit/$id': typeof EditIdRoute
   '/executables/$id': typeof ExecutablesIdRoute
 }
@@ -59,7 +52,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/add': typeof AddRoute
-  '/grid': typeof GridRoute
   '/edit/$id': typeof EditIdRoute
   '/executables/$id': typeof ExecutablesIdRoute
 }
@@ -68,43 +60,27 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/add': typeof AddRoute
-  '/grid': typeof GridRoute
   '/edit/$id': typeof EditIdRoute
   '/executables/$id': typeof ExecutablesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$' | '/add' | '/grid' | '/edit/$id' | '/executables/$id'
+  fullPaths: '/' | '/$' | '/add' | '/edit/$id' | '/executables/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$' | '/add' | '/grid' | '/edit/$id' | '/executables/$id'
-  id:
-    | '__root__'
-    | '/'
-    | '/$'
-    | '/add'
-    | '/grid'
-    | '/edit/$id'
-    | '/executables/$id'
+  to: '/' | '/$' | '/add' | '/edit/$id' | '/executables/$id'
+  id: '__root__' | '/' | '/$' | '/add' | '/edit/$id' | '/executables/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
   AddRoute: typeof AddRoute
-  GridRoute: typeof GridRoute
   EditIdRoute: typeof EditIdRoute
   ExecutablesIdRoute: typeof ExecutablesIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/grid': {
-      id: '/grid'
-      path: '/grid'
-      fullPath: '/grid'
-      preLoaderRoute: typeof GridRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/add': {
       id: '/add'
       path: '/add'
@@ -147,7 +123,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
   AddRoute: AddRoute,
-  GridRoute: GridRoute,
   EditIdRoute: EditIdRoute,
   ExecutablesIdRoute: ExecutablesIdRoute,
 }

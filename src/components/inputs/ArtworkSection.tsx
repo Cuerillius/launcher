@@ -22,7 +22,7 @@ export function ArtworkSection({
   onOpenApiKeyDialog,
 }: ArtworkSectionProps) {
   return (
-    <div>
+    <div className="bg-card/30 rounded-xl border border-border/50 p-6 shadow-sm">
       <div className="flex-none">
         <div className="flex items-center gap-2 mb-4">
           <h2 className="text-lg font-semibold">Artwork</h2>
