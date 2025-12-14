@@ -1,10 +1,10 @@
-# Launcher
+# Omni
 
 A simple, opinionated game launcher designed to organize your library without the bloat.
 
 > "There are too many launchers, so I built one to rule them all."
 
-![Screenshot Placeholder](./resources/screenshot.png)
+<img width="2193" height="1395" alt="image" src="https://github.com/user-attachments/assets/9cc5b40f-660f-4e83-bc67-2e6f799185be" />
 
 ## Features
 
@@ -30,6 +30,7 @@ If you want to contribute or modify the launcher, follow these steps to run it l
 
 ### Prerequisites
 
+- [Tarui Prerequisites](https://v2.tauri.app/start/prerequisites/)
 - [Bun](https://bun.sh/) (Runtime & Package Manager)
 
 ### Running Locally
@@ -50,12 +51,5 @@ If you want to contribute or modify the launcher, follow these steps to run it l
 3.  **Start the application**
 
     ```sh
-    # Run the app in development mode
-    bun run start
-    ```
-
-4.  **Watch mode (for live development)**
-    ```sh
-    # specific command for hot-reloading/watching files
-    bun run watch
+    bun run tauri dev
     ```
