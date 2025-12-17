@@ -1,62 +1,35 @@
 import { cn } from "@/lib/utils";
-import {
-  getRunningExecutables,
-  launchExecutable,
-  stopExecutable,
-} from "@/services/executables";
 import { Executable } from "@/types/Executable";
 import { CircleX, Ellipsis, Play, LucideIcon } from "lucide-react";
+import {
+  useLaunchExecutable,
+  useRunningExecutables,
+  useStopExecutable,
+} from "@/hooks/useExecutables";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useMemo, useCallback } from "react";
 
 function useExecutableStatus(executable: Executable | null) {
-  const [isRunning, setIsRunning] = useState(false);
+  const { data: runningExecutables } = useRunningExecutables();
+  const { mutate: launchExecutable } = useLaunchExecutable();
+  const { mutate: stopExecutable } = useStopExecutable();
 
-  const checkStatus = useCallback(async () => {
-    if (!executable) return;
+  const isRunning = useMemo(() => {
+    if (!executable || !runningExecutables) return false;
+    return runningExecutables.includes(executable.id);
+  }, [executable, runningExecutables]);
 
-    try {
-      const runningIds = await getRunningExecutables();
-      const isThisGameRunning = runningIds.includes(executable.id);
-
-      setIsRunning(isThisGameRunning);
-    } catch (error) {
-      console.error("Failed to check game status:", error);
-    }
-  }, [executable]);
-
-  useEffect(() => {
-    if (!executable) return;
-    checkStatus();
-    const intervalId = setInterval(checkStatus, 2000);
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [executable, checkStatus]);
-
-  const handleLaunch = async () => {
+  const handleLaunch = useCallback(() => {
     if (executable) {
-      try {
-        setIsRunning(true);
-        await launchExecutable(executable.id);
-        checkStatus();
-      } catch (error) {
-        console.error("Failed to launch:", error);
-        setIsRunning(false);
-      }
+      launchExecutable(executable.id);
     }
-  };
+  }, [executable, launchExecutable]);
 
-  const handleStop = async () => {
+  const handleStop = useCallback(() => {
     if (executable) {
-      try {
-        await stopExecutable(executable.id);
-        setIsRunning(false);
-      } catch (error) {
-        console.error("Failed to stop:", error);
-      }
+      stopExecutable(executable.id);
     }
-  };
+  }, [executable, stopExecutable]);
 
   return { isRunning, handleLaunch, handleStop };
 }

@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 pub mod executable_manager;
+pub mod import_manager;
 pub mod keystore;
 use crate::executable_manager::LauncherState;
 use std::{
@@ -13,6 +14,8 @@ use executable_manager::{
     delete_executable, get_all_executables, get_executable, get_running_executables,
     launch_executable, save_executable, stop_executable,
 };
+
+use import_manager::scan_folder_for_exes;
 
 use keystore::{get_api_key, save_api_key};
 
@@ -36,7 +39,8 @@ pub fn run() {
             stop_executable,
             get_executable,
             get_api_key,
-            save_api_key
+            save_api_key,
+            scan_folder_for_exes
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

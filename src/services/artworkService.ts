@@ -1,5 +1,5 @@
 import { ArtworkProvider, ArtworkSet } from "@/types/Artwork";
-import { SteamGridDBProvider } from "./steamgriddb";
+import { SteamGridDBProvider } from "./provider/steamgriddb";
 
 const CURRENT_PROVIDER_TYPE = "steamgriddb";
 

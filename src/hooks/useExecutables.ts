@@ -86,6 +86,18 @@ export function useLaunchExecutable() {
   });
 }
 
+export function useStopExecutable() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      return await invoke("stop_executable", { id });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["executables", "running"] });
+    },
+  });
+}
+
 export function useAllExecutables() {
   return useQuery<Executable[], Error>({
     queryKey: ["executables", "list"],

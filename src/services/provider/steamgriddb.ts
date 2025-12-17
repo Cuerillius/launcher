@@ -1,7 +1,7 @@
 import { fetch } from "@tauri-apps/plugin-http";
-import { loadKey } from "./keystore";
 import { ArtworkProvider } from "@/types/Artwork";
-import { ArtworkProviderService } from "./artworkService";
+import { ArtworkProviderService } from "../artworkService";
+import { loadKey } from "../keystore";
 
 export interface SGDBGame {
   id: number;

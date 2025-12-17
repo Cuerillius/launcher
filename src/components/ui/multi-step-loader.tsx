@@ -35,7 +35,7 @@ const CheckFilled = ({ className }: { className?: string }) => {
   );
 };
 
-const LoaderCore = ({
+export const LoaderCore = ({
   loadingStates,
   value = 0,
 }: {

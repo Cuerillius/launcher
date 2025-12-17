@@ -42,7 +42,7 @@ function Sidebar() {
         >
           <div
             className="flex items-center gap-2 cursor-pointer"
-            onClick={() => navigate({ to: "/" })}
+            onClick={() => navigate({ to: "/import" })}
           >
             <div className="shrink-0 text-sidebar-foreground">
               <Logo />

@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ImportRouteImport } from './routes/import'
 import { Route as AddRouteImport } from './routes/add'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ExecutablesIdRouteImport } from './routes/executables.$id'
 import { Route as EditIdRouteImport } from './routes/edit.$id'
 
+const ImportRoute = ImportRouteImport.update({
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AddRoute = AddRouteImport.update({
   id: '/add',
   path: '/add',
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/add': typeof AddRoute
+  '/import': typeof ImportRoute
   '/edit/$id': typeof EditIdRoute
   '/executables/$id': typeof ExecutablesIdRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/add': typeof AddRoute
+  '/import': typeof ImportRoute
   '/edit/$id': typeof EditIdRoute
   '/executables/$id': typeof ExecutablesIdRoute
 }
@@ -60,27 +68,43 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/add': typeof AddRoute
+  '/import': typeof ImportRoute
   '/edit/$id': typeof EditIdRoute
   '/executables/$id': typeof ExecutablesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$' | '/add' | '/edit/$id' | '/executables/$id'
+  fullPaths: '/' | '/$' | '/add' | '/import' | '/edit/$id' | '/executables/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$' | '/add' | '/edit/$id' | '/executables/$id'
-  id: '__root__' | '/' | '/$' | '/add' | '/edit/$id' | '/executables/$id'
+  to: '/' | '/$' | '/add' | '/import' | '/edit/$id' | '/executables/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/$'
+    | '/add'
+    | '/import'
+    | '/edit/$id'
+    | '/executables/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
   AddRoute: typeof AddRoute
+  ImportRoute: typeof ImportRoute
   EditIdRoute: typeof EditIdRoute
   ExecutablesIdRoute: typeof ExecutablesIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/import': {
+      id: '/import'
+      path: '/import'
+      fullPath: '/import'
+      preLoaderRoute: typeof ImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/add': {
       id: '/add'
       path: '/add'
@@ -123,6 +147,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
   AddRoute: AddRoute,
+  ImportRoute: ImportRoute,
   EditIdRoute: EditIdRoute,
   ExecutablesIdRoute: ExecutablesIdRoute,
 }

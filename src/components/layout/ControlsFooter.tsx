@@ -1,18 +1,22 @@
-import { Save, Trash2 } from "lucide-react";
+import { Save, Trash2, LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WarpDialogTrigger } from "@/components/ui/warp-dialog";
 
 type ControlsFooterProps = {
   submitLabel?: string;
+  submitIcon?: LucideIcon;
   onCancel: () => void;
   onDelete?: () => Promise<void>;
+  onSubmit?: () => void;
   isSubmitting?: boolean;
 };
 
 export function ControlsFooter({
   submitLabel = "Save",
+  submitIcon: Icon = Save,
   onCancel,
   onDelete,
+  onSubmit,
   isSubmitting,
 }: ControlsFooterProps) {
   return (
@@ -36,8 +40,13 @@ export function ControlsFooter({
         </WarpDialogTrigger>
       )}
 
-      <Button type="submit" className="w-32" disabled={isSubmitting}>
-        <Save className="mr-2 h-4 w-4" />
+      <Button
+        type={onSubmit ? "button" : "submit"}
+        onClick={onSubmit}
+        className="min-w-32"
+        disabled={isSubmitting}
+      >
+        <Icon className="mr-2 h-4 w-4" />
         {submitLabel}
       </Button>
     </div>
