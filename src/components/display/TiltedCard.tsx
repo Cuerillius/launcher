@@ -1,6 +1,7 @@
 import type { SpringOptions } from "framer-motion";
 import { useRef, useState } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
+import { Download } from "lucide-react";
 
 interface TiltedCardProps {
   imageSrc?: React.ComponentProps<"img">["src"];
@@ -17,6 +18,7 @@ interface TiltedCardProps {
   showTooltip?: boolean;
   overlayContent?: React.ReactNode;
   displayOverlayContent?: boolean;
+  isAvailable?: boolean;
 }
 
 const springValues: SpringOptions = {
@@ -28,6 +30,7 @@ const springValues: SpringOptions = {
 export default function TiltedCard({
   imageSrc,
   playTime = 0,
+  isAvailable = true,
   altText = "Tilted card image",
   captionText = "",
   containerHeight = "300px",
@@ -121,7 +124,11 @@ export default function TiltedCard({
         {imageSrc ? (
           <>
             <div className="absolute bottom-2 right-2 z-10 bg-black/50 text-white text-xs font-bold px-2 py-1 rounded-md backdrop-blur-md">
-              {Math.floor(playTime / 60)}h
+              {isAvailable ? (
+                <>{Math.floor(playTime / 60)}h</>
+              ) : (
+                <Download className="size-4 text-red-500" />
+              )}
             </div>
             <motion.div
               className="absolute top-0 left-0 w-full h-full rounded-[15px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -156,7 +163,11 @@ export default function TiltedCard({
             }}
           >
             <div className="absolute bottom-2 right-2 z-10 bg-black/50 text-white text-xs font-bold px-2 py-1 rounded-md backdrop-blur-md">
-              {Math.floor(playTime / 60)}h
+              {isAvailable ? (
+                <>{Math.floor(playTime / 60)}h</>
+              ) : (
+                <Download className="size-4 text-red-500" />
+              )}
             </div>
             <span className="text-center text-gray-800 font-semibold">
               {altText}

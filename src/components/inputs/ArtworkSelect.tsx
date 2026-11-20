@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useState, useRef, ChangeEvent } from "react";
+import { useMemo, useState, useRef, ChangeEvent, useEffect } from "react";
 import { ScrollArea } from "../ui/scroll-area";
 import { X, Upload } from "lucide-react";
 import {
@@ -18,7 +18,6 @@ interface ImageSelectProps {
   ratio?: ArtworkRatio;
 }
 
-// Updated configuration to rely on Aspect Ratio classes rather than fixed widths
 const RATIO_CONFIG = {
   poster: {
     aspect: "aspect-[2/3]",
@@ -36,7 +35,7 @@ const RATIO_CONFIG = {
     objectFit: "object-cover",
   },
   logo: {
-    aspect: "aspect-[2/1]", // Slightly wider for logos
+    aspect: "aspect-[2/1]",
     grid: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
     objectFit: "object-contain p-8",
   },
@@ -52,6 +51,15 @@ function ArtworkSelect({
   const config = RATIO_CONFIG[ratio];
   const [isOpen, setIsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-select the first image if no value is present
+  useEffect(() => {
+    if (!value && selectableImages && selectableImages.length > 0 && onChange) {
+      // Immediately trigger the change handler with the first available image
+      // This ensures formData is populated even if the user never clicks anything
+      onChange(selectableImages[0]);
+    }
+  }, [selectableImages, value, onChange]);
 
   const displayedImages = useMemo(() => {
     const images: string[] = [];
@@ -95,20 +103,19 @@ function ArtworkSelect({
       <motion.div
         className={cn(
           "group relative w-full cursor-pointer outline-none",
-          config.aspect // Applies the aspect ratio to the main container
+          config.aspect
         )}
         onClick={() => setIsOpen(true)}
         whileHover={{ scale: 1.01 }}
         transition={{ duration: 0.2 }}
       >
-        {/* Background Card 2 (Bottom) */}
         <div
           className={cn(
             "absolute inset-0 z-0",
             "transform rounded-xl border border-zinc-800 bg-zinc-900 opacity-60 shadow-sm",
             "transition-all duration-300 ease-out",
-            "rotate-[-6deg] scale-95 origin-bottom-right", // Default state
-            "group-hover:rotate-[-8deg] group-hover:translate-x-[-8px]" // Hover state
+            "rotate-[-6deg] scale-95 origin-bottom-right",
+            "group-hover:rotate-[-8deg] group-hover:translate-x-[-8px]"
           )}
         >
           {displayedImages.length > 2 && (
@@ -123,14 +130,13 @@ function ArtworkSelect({
           )}
         </div>
 
-        {/* Background Card 1 (Middle) */}
         <div
           className={cn(
             "absolute inset-0 z-10",
             "transform rounded-xl border border-zinc-800 bg-zinc-900 opacity-80 shadow-sm",
             "transition-all duration-300 ease-out",
-            "rotate-[-3deg] scale-98 origin-bottom-right", // Default state
-            "group-hover:rotate-[-4deg] group-hover:translate-x-[-4px]" // Hover state
+            "rotate-[-3deg] scale-98 origin-bottom-right",
+            "group-hover:rotate-[-4deg] group-hover:translate-x-[-4px]"
           )}
         >
           {displayedImages.length > 1 && (
@@ -142,7 +148,6 @@ function ArtworkSelect({
           )}
         </div>
 
-        {/* Foreground Card (Selected) */}
         <motion.div
           className={cn(
             "absolute inset-0 z-20 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950 shadow-xl",
@@ -170,7 +175,6 @@ function ArtworkSelect({
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-10">
-            {/* Modal Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -179,7 +183,6 @@ function ArtworkSelect({
               className="absolute inset-0 bg-black/80 backdrop-blur-md z-[99]"
             />
 
-            {/* Modal Content */}
             <motion.div
               className="relative z-[101] flex h-[85vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl"
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -221,7 +224,7 @@ function ArtworkSelect({
                               isSelected
                                 ? "border-white ring-2 ring-white/20"
                                 : "border-transparent hover:border-zinc-700",
-                              config.aspect // Use same aspect ratio in grid
+                              config.aspect
                             )}
                           >
                             <div className="absolute right-3 top-3 z-20">
@@ -260,7 +263,6 @@ function ArtworkSelect({
                         );
                       })}
 
-                      {/* Upload Button */}
                       <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}

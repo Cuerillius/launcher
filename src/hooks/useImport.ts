@@ -4,12 +4,13 @@ import { ScanResult, ScanResultSelection } from "@/types/Import";
 import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
-export function useScanFolderForExes(rootPath: string) {
+export function useScanFolderForExes(rootPath: string | undefined) {
   return useQuery({
     queryKey: ["executables", "detail", rootPath],
     queryFn: async () => {
       return await invoke<ScanResult[]>("scan_folder_for_exes", { rootPath });
     },
+    enabled: !!rootPath,
   });
 }
 

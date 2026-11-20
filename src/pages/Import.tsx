@@ -9,6 +9,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ControlsFooter } from "@/components/layout/ControlsFooter";
 import { ScanResult, ScanResultSelection } from "@/types/Import";
+import { SourcePlatform } from "@/types/Executable";
+import { SelectEnum } from "@/components/inputs/SelectEnum";
 import {
   convertScanResultToExecutable,
   useScanFolderForExes,
@@ -20,7 +22,12 @@ import { AnimatePresence, motion } from "motion/react";
 
 function ImportView() {
   const [rootPath, setRootPath] = useState("");
-  const [scanPath, setScanPath] = useState("");
+
+  const [scanPath, setScanPath] = useState<string | undefined>(undefined);
+
+  const [platform, setPlatform] = useState<SourcePlatform>(
+    SourcePlatform.Unknown
+  );
 
   const [isImporting, setIsImporting] = useState(false);
   const [importStep, setImportStep] = useState(0);
@@ -41,7 +48,7 @@ function ImportView() {
   useEffect(() => {
     if (error) {
       toast.error("Scan Failed", { description: String(error) });
-      setScanPath("");
+      setScanPath(undefined);
     }
   }, [error]);
 
@@ -96,9 +103,10 @@ function ImportView() {
   };
 
   const handleCancel = () => {
-    setScanPath("");
+    setScanPath(undefined);
     setSelectedExecutables([]);
     setRootPath("");
+    setPlatform(SourcePlatform.Unknown);
   };
 
   const handleSubmit = async () => {
@@ -119,6 +127,7 @@ function ImportView() {
         const executableData = await convertScanResultToExecutable(selection);
 
         if (executableData) {
+          executableData.platform = platform;
           await saveExecutableMutation.mutateAsync(executableData);
         }
 
@@ -126,7 +135,7 @@ function ImportView() {
       }
 
       toast.success("Import Complete", {
-        description: `Imported ${selectedExecutables.length} games.`,
+        description: `Imported ${selectedExecutables.length} games as ${platform}.`,
       });
 
       handleCancel();
@@ -162,21 +171,36 @@ function ImportView() {
 
       <div className="flex-none space-y-4">
         <h1 className="text-xl font-bold">Import Executables</h1>
-        <div className="space-y-2">
-          <Label htmlFor="exePath">Root Folder Path</Label>
-          <div className="flex items-center gap-2">
-            <Input
-              value={rootPath}
-              onChange={(e) => setRootPath(e.target.value)}
-              className="font-mono text-sm"
-              placeholder="Select folder..."
-            />
-            <Button variant="outline" size="icon" onClick={onFileClick}>
-              <FolderOpen className="h-4 w-4" />
-            </Button>
-            <Button onClick={handleScan} disabled={loading || !rootPath}>
-              {loading ? "Scanning..." : "Scan"}
-            </Button>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="exePath">Root Folder Path</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                value={rootPath}
+                onChange={(e) => setRootPath(e.target.value)}
+                className="font-mono text-sm"
+                placeholder="Select folder..."
+              />
+              <Button variant="outline" size="icon" onClick={onFileClick}>
+                <FolderOpen className="h-4 w-4" />
+              </Button>
+              <Button onClick={handleScan} disabled={loading || !rootPath}>
+                {loading ? "Scanning..." : "Scan"}
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Platform</Label>
+            <div className="[&>button]:w-full">
+              <SelectEnum
+                value={platform}
+                label="Platform"
+                placeholder="Select Platform"
+                enum={SourcePlatform}
+                onValueChange={(value) => setPlatform(value as SourcePlatform)}
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -1,4 +1,11 @@
-import { LayoutGrid, PanelLeft, Plus, Search } from "lucide-react";
+import {
+  LayoutGrid,
+  PanelLeft,
+  Plus,
+  Search,
+  FilePlus,
+  Import,
+} from "lucide-react";
 import { useState, useMemo } from "react";
 
 import { cn } from "@/lib/utils";
@@ -7,6 +14,12 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { ScrollArea } from "../ui/scroll-area";
 import { Skeleton } from "../ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import { ExecutableIcon } from "../display/ExecutableImage";
 import { useNavigate } from "@tanstack/react-router";
 import { useAllExecutables } from "@/hooks/useExecutables";
@@ -24,6 +37,7 @@ function Sidebar() {
       exe.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [executables, searchTerm]);
+
   return (
     <div
       data-collapsed={isCollapsed}
@@ -42,7 +56,7 @@ function Sidebar() {
         >
           <div
             className="flex items-center gap-2 cursor-pointer"
-            onClick={() => navigate({ to: "/import" })}
+            onClick={() => navigate({ to: "/" })}
           >
             <div className="shrink-0 text-sidebar-foreground">
               <Logo />
@@ -122,7 +136,10 @@ function Sidebar() {
                     "flex w-full items-center h-10 group overflow-hidden",
                     isCollapsed ? "justify-center px-0" : "justify-start px-2",
                     "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                    "text-muted-foreground"
+                    // CONDITIONALLY APPLY COLORS HERE:
+                    executable.path
+                      ? "text-sidebar-foreground" // Bright/Normal if path exists
+                      : "text-muted-foreground" // Grayed out if no path
                   )}
                   onClick={() =>
                     navigate({
@@ -160,23 +177,53 @@ function Sidebar() {
       <div className="mx-4 h-px bg-sidebar-border" />
 
       <div className="p-4 mt-auto border-sidebar-border shrink-0">
-        <Button
-          variant="ghost"
-          disabled={isLoading}
-          className={cn(
-            "w-full justify-start gap-2 px-2",
-            "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-            isCollapsed && "justify-center px-0"
-          )}
-          onClick={() => navigate({ to: "/add" })}
-        >
-          <div className="flex items-center justify-center rounded-md bg-sidebar-accent p-1 text-sidebar-accent-foreground">
-            <Plus className="size-4" />
-          </div>
-          {!isCollapsed && (
-            <span className="font-semibold text-sm">Add Executable</span>
-          )}
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              disabled={isLoading}
+              className={cn(
+                "w-full justify-start gap-2 px-2",
+                "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                "data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",
+                isCollapsed && "justify-center px-0"
+              )}
+            >
+              <div className="flex items-center justify-center rounded-md bg-sidebar-accent p-1 text-sidebar-accent-foreground">
+                <Plus className="size-4" />
+              </div>
+              {!isCollapsed && (
+                <span className="font-semibold text-sm">Add Executable</span>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent
+            sideOffset={10}
+            side={isCollapsed ? "right" : "top"}
+            align={isCollapsed ? "start" : "center"}
+            className={cn(
+              "min-w-[160px]",
+              !isCollapsed && "w-[var(--radix-dropdown-menu-trigger-width)]"
+            )}
+          >
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => navigate({ to: "/add" })}
+            >
+              <FilePlus className="mr-2 size-4" />
+              <span>Add Manually</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => navigate({ to: "/import" })}
+            >
+              <Import className="mr-2 size-4" />
+              <span>Import</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

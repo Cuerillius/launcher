@@ -68,6 +68,7 @@ export default function GridView({
             <div className="relative h-full w-full">
               <TiltedCard
                 imageSrc={executable.grid?.path}
+                isAvailable={!!executable.path}
                 playTime={executable.playtime}
                 altText={executable.name}
                 containerHeight="100%"
@@ -137,6 +138,7 @@ export default function GridView({
                 <TiltedCard
                   imageSrc={selectedExecutable.grid?.path}
                   altText={selectedExecutable.name}
+                  isAvailable={!!selectedExecutable.path}
                   playTime={selectedExecutable.playtime}
                   containerHeight="100%"
                   containerWidth="100%"
